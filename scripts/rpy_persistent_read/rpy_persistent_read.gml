@@ -18,6 +18,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+// Portions of this code are based on CPython source code.
+// Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
+// 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022 Python Software Foundation;
+// All Rights Reserved
+// See <https://wiki.python.org/moin/PythonSoftwareFoundationLicenseV2Easy> for license.
+
 // Hacked together DDLC persistent reader (protocol 2)
 // by Dobby233Liu
 // works as long as DDLC don't update to a new Python version
