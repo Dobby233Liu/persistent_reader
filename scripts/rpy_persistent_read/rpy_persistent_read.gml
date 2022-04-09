@@ -125,6 +125,28 @@ function rpyp_pkl_read_binstring(buf, startpoint, len, movecursor = false, escap
 	return str
 }
 
+// Based on https://forum.yoyogames.com/index.php?threads/reverse-a-string.33407/post-206775
+function rpyp_pkl_read_bef64(buf, movecursor = true) {
+	var n = 8;
+	var b1 = buffer_create(n + 1, buffer_fixed, 2);
+	var b2 = buffer_create(n + 1, buffer_fixed, 2);
+	buffer_seek(b1, buffer_seek_start, 0);
+	buffer_copy(buf, buffer_tell(buf), n + 1, b1, 0)
+	buffer_seek(b1, buffer_seek_start, 0);
+	var i = n;
+	while (buffer_tell(b1) < n) {
+		var c = buffer_read(b1, buffer_u8);
+		buffer_poke(b2, --i, buffer_u8, c);
+	}
+	buffer_seek(b2, buffer_seek_start, 0);
+	var fend = buffer_read(b2, buffer_f64);
+	buffer_delete(b1)
+	buffer_delete(b2)
+	if movecursor
+		buffer_seek(buf, buffer_seek_relative, n);
+	return fend;
+}
+
 function rpyp_pkl_read_line(buf, escape = false) {
 	var startpoint = buffer_tell(buf)
 	var endpoint = startpoint
@@ -551,7 +573,8 @@ function rpy_persistent_read_raw_buffer(buf) {
 					array_push(stack, memo[index])
 					break;
 				case global._pickle_opcodes.BINFLOAT:
-					array_push(stack, buffer_read(buf, buffer_f64))
+					// FIXME: this is potenially broken
+					array_push(stack, rpyp_pkl_read_bef64(buf))
 					break;
 				case global._pickle_opcodes.STOP:
 					var value = stack[array_length(stack) - 1];
@@ -713,7 +736,6 @@ function rpy_persistent_read_raw_buffer(buf) {
 				throw _e
 			}
 		} else {
-			show_debug_message(_e)
 			throw (_e.message + "\nBuffer read to position " + string(buffer_tell(buf)))
 		}
 	}
