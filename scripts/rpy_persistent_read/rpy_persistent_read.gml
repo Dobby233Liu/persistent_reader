@@ -111,7 +111,7 @@ global._pickle_opcodes = {
 }
 
 // escaped strings parsing is currently not supported
-function rpyp_pkl_read_binstring(buf, startpoint, len, movecursor = false, escape = false) {
+function rpyp_pkl_read_binstring(buf, startpoint, len, movecursor = true, escape = false) {
 	if len == 0
 		return ""
 	else if buffer_get_size(buf) < (startpoint + len)
@@ -176,7 +176,7 @@ function rpyp_pkl_read_line(buf, escape = false) {
 			break;
 		}
 	}
-	return rpyp_pkl_read_binstring(buf, startpoint, endpoint - startpoint, escape);
+	return rpyp_pkl_read_binstring(buf, startpoint, endpoint - startpoint, false, escape);
 }
 
 function _rpyp_pkl__builtin_object() constructor {
@@ -630,8 +630,8 @@ function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
 					break;
 				case global._pickle_opcodes.STRING:
 				case global._pickle_opcodes.UNICODE:
-					var value = rpyp_pkl_read_line(buf, true)
-					array_push(stack, string_copy(value, 1, string_length(value) - 1))
+					var value = rpyp_pkl_read_line(buf, true, true)
+					array_push(stack, string_copy(value, 2, string_length(value) - 2))
 					break;
 				case global._pickle_opcodes.APPEND:
 					var value = stack[array_length(stack) - 1]
