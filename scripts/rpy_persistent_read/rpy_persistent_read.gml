@@ -76,16 +76,16 @@ global._pickle_opcodes = {
 
 	PROTO       : "\x80",
 	NEWOBJ      : "\x81",
-	//EXT1        : "\x82",
-	//EXT2        : "\x83",
-	//EXT4        : "\x84",
+	EXT1        : "\x82",
+	EXT2        : "\x83",
+	EXT4        : "\x84",
 	TUPLE1      : "\x85",
 	TUPLE2      : "\x86",
 	TUPLE3      : "\x87",
 	NEWTRUE     : "\x88",
 	NEWFALSE    : "\x89",
-	//LONG1       : "\x8a",
-	//LONG4       : "\x8b"
+	LONG1       : "\x8a",
+	LONG4       : "\x8b"
 }
 
 function rpyp_pkl_read_binstring(buf, startpoint, len, movecursor = false) {
@@ -476,6 +476,15 @@ function rpy_persistent_read_raw_buffer(buf) {
 					var value = stack[array_length(stack) - 1];
 					array_pop(stack)
 					throw "STOP"
+					break;
+				case global._pickle_opcodes.EXT1:
+				case global._pickle_opcodes.EXT2:
+				case global._pickle_opcodes.EXT4:
+					throw "Extensions are not supported. Corrupt persistent file?"
+					break;
+				case global._pickle_opcodes.LONG1:
+				case global._pickle_opcodes.LONG4:
+					throw "Long numbers are not supported. Corrupt persistent file?"
 					break;
 				default:
 					throw "Unknown opcode " + string(inst);
