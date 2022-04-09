@@ -125,23 +125,40 @@ function rpyp_pkl_read_binstring(buf, startpoint, len, movecursor = false, escap
 	return str
 }
 
+// From https://forum.yoyogames.com/index.php?threads/endianness-aware-built-in-functions.94360/
+function rpyp_pkl_is_native_little_endian() {
+	static memoized_value = (function() {
+		var buffer = buffer_create(2, buffer_fixed, 1);
+		try {
+			buffer_write(buffer, buffer_u16, 0x0005);
+
+			var first_byte = buffer_peek(buffer, 0, buffer_u8);
+			return first_byte == 0x05;
+		} finally {
+			buffer_delete(buffer);
+		}
+	})();
+	return memoized_value;
+}
 // Based on https://forum.yoyogames.com/index.php?threads/reverse-a-string.33407/post-206775
 function rpyp_pkl_read_bef64(buf, movecursor = true) {
-	var n = 8;
-	var b1 = buffer_create(n + 1, buffer_fixed, 2);
-	var b2 = buffer_create(n + 1, buffer_fixed, 2);
-	buffer_seek(b1, buffer_seek_start, 0);
-	buffer_copy(buf, buffer_tell(buf), n + 1, b1, 0)
-	buffer_seek(b1, buffer_seek_start, 0);
-	var i = n;
-	while (buffer_tell(b1) < n) {
-		var c = buffer_read(b1, buffer_u8);
-		buffer_poke(b2, --i, buffer_u8, c);
+	var fend, n = 8;
+	if rpyp_pkl_is_native_little_endian() {
+		var b1 = buffer_create(n + 1, buffer_fixed, 2);
+		var b2 = buffer_create(n + 1, buffer_fixed, 2);
+		buffer_copy(buf, buffer_tell(buf), n + 1, b1, 0)
+		var i = n;
+		while (buffer_tell(b1) < n) {
+			var c = buffer_read(b1, buffer_u8);
+			buffer_poke(b2, --i, buffer_u8, c);
+		}
+		buffer_seek(b2, buffer_seek_start, 0);
+		fend = buffer_read(b2, buffer_f64);
+		buffer_delete(b1)
+		buffer_delete(b2)
+	} else {
+		fend = buffer_peek(buf, buffer_tell(buf), buffer_f64)
 	}
-	buffer_seek(b2, buffer_seek_start, 0);
-	var fend = buffer_read(b2, buffer_f64);
-	buffer_delete(b1)
-	buffer_delete(b2)
 	if movecursor
 		buffer_seek(buf, buffer_seek_relative, n);
 	return fend;
@@ -573,7 +590,6 @@ function rpy_persistent_read_raw_buffer(buf) {
 					array_push(stack, memo[index])
 					break;
 				case global._pickle_opcodes.BINFLOAT:
-					// FIXME: this is potenially broken
 					array_push(stack, rpyp_pkl_read_bef64(buf))
 					break;
 				case global._pickle_opcodes.STOP:
@@ -746,18 +762,25 @@ function rpy_persistent_read_raw_buffer(buf) {
 }
 function rpy_persistent_read_buffer(cmp_buff) {
 	var pickle_buff = buffer_decompress(cmp_buff)
-	var ret = rpy_persistent_read_raw_buffer(pickle_buff)
-	buffer_delete(pickle_buff)
+	try {
+		var ret = rpy_persistent_read_raw_buffer(pickle_buff)
+	} finally {
+		buffer_delete(pickle_buff)
+	}
 	return ret
 }
 function rpy_persistent_read(fn){
-	var orig_file = buffer_load(fn);
-	if !buffer_exists(orig_file)
-		show_error("Can't load file " + fn, true)
-	var ret = rpy_persistent_read_buffer(orig_file)
-	buffer_delete(orig_file)
+	try {
+		var orig_file = buffer_load(fn);
+		if !buffer_exists(orig_file)
+			throw "Can't load file " + fn;
+		var ret = rpy_persistent_read_buffer(orig_file)
+	} finally {
+		buffer_delete(orig_file)
+	}
 	return ret
 }
+
 function rpy_persistent_convert_from_abstract(obj) {
 	var struct = {};
 	var keys = variable_struct_get_names(obj);
