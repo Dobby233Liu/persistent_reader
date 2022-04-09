@@ -1,4 +1,5 @@
-pdata = rpy_persistent_read("persistent")
+pdataa = rpy_persistent_read("persistent")
+pdata = rpy_persistent_convert_from_abstract(pdataa)
 dump = ""
 var file = file_text_open_write("dump.txt")
 var keys = variable_struct_get_names(pdata);

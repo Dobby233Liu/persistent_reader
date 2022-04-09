@@ -34,42 +34,42 @@
 global._pickle_opcodes = {
 	MARK            : "(",
 	STOP            : ".",
-	//POP             : "0",
-	//POP_MARK        : "1",
-	//DUP             : "2",
-	//FLOAT           : "F",
-	//INT             : "I",
+	POP             : "0",
+	POP_MARK        : "1",
+	DUP             : "2",
+	FLOAT           : "F",
+	INT             : "I",
 	BININT          : "J",
 	BININT1         : "K",
-	//LONG            : "L",
+	LONG            : "L",
 	BININT2         : "M",
 	NONE            : "N",
-	//PERSID          : "P",
-	//BINPERSID       : "Q",
+	PERSID          : "P",
+	BINPERSID       : "Q",
 	REDUCE          : "R",
-	//STRING          : "S",
-	//BINSTRING       : "T",
+	STRING          : "S",
+	BINSTRING       : "T",
 	SHORT_BINSTRING : "U",
-	//UNICODE         : "V",
+	UNICODE         : "V",
 	BINUNICODE      : "X",
-	//APPEND          : "a",
+	APPEND          : "a",
 	BUILD           : "b",
 	GLOBAL          : "c",
-	//DICT            : "d",
+	DICT            : "d",
 	EMPTY_DICT      : "}",
 	APPENDS         : "e",
-	//GET             : "g",
+	GET             : "g",
 	BINGET          : "h",
-	//INST            : "i",
+	INST            : "i",
 	LONG_BINGET     : "j",
-	//LIST            : "l",
+	LIST            : "l",
 	EMPTY_LIST      : "]",
-	//OBJ             : "o",
-	//PUT             : "p",
+	OBJ             : "o",
+	PUT             : "p",
 	BINPUT          : "q",
 	LONG_BINPUT     : "r",
-	//SETITEM         : "s",
-	//TUPLE           : "t",
+	SETITEM         : "s",
+	TUPLE           : "t",
 	EMPTY_TUPLE     : ")",
 	SETITEMS        : "u",
 	BINFLOAT        : "G",
@@ -88,21 +88,22 @@ global._pickle_opcodes = {
 	LONG4       : "\x8b"
 }
 
-function rpyp_pkl_read_binstring(buf, startpoint, len, movecursor = false) {
+// escaped strings parsing is currently not supported
+function rpyp_pkl_read_binstring(buf, startpoint, len, movecursor = false, escape = false) {
 	if len == 0
 		return ""
 	else if buffer_get_size(buf) < (startpoint + len)
 		throw "String length out of bounds";
 	var _buf = buffer_create(len, buffer_fixed, 2)
 	buffer_copy(buf, startpoint, len, _buf, 0)
-	str = buffer_read(_buf, buffer_string)
+	str = buffer_read(_buf, buffer_text)
 	buffer_delete(_buf)
 	if movecursor
 		buffer_seek(buf, buffer_seek_start, startpoint + len)
 	return str
 }
 
-function rpyp_pkl_read_line(buf) {
+function rpyp_pkl_read_line(buf, escape = false) {
 	var startpoint = buffer_tell(buf)
 	var endpoint = startpoint
 	while (true) {
@@ -114,7 +115,7 @@ function rpyp_pkl_read_line(buf) {
 			break;
 		}
 	}
-	return rpyp_pkl_read_binstring(buf, startpoint, endpoint - startpoint);
+	return rpyp_pkl_read_binstring(buf, startpoint, endpoint - startpoint, escape);
 }
 
 function _rpyp_pkl__builtin_object() constructor {
@@ -131,27 +132,9 @@ function _rpyp_pkl__builtin_object() constructor {
 		return self;
 	}
 	static __init__ = function () {}
-	//static __getattribute__ = function(name) {
-	//	return self[$ name]
-	//}
-	//static __getattr__ = function(name) {
-	//	return self[$ name]
-	//}
-	//static __setattr__ = function(name, value) {
-	//	self[$ name] = value
-	//}
-	//static __delattr__ = function(name) {
-	//	self[$ name] = undefined
-	//}
 	static toString = function() {
 		return __module__ + "." + __name__
 	}
-	//static __str__ = function() {
-	//	return string(self)
-	//}
-	//static __repr__ = function() {
-	//	return string(self)
-	//}
 	static __setstate__ = function (state) {
 		var keys = variable_struct_get_names(state);
 		for (var i = 0; i < array_length(keys); i++) {
@@ -241,12 +224,6 @@ function _rpyp_pkl__builtin_dict() : _rpyp_pkl__builtin_object() constructor {
 	static toString = function () {
 		return string(__content__);
 	}
-	static __setstate__ = function (state) {
-		var keys = variable_struct_get_names(state);
-		for (var i = 0; i < array_length(keys); i++) {
-		    __content__[$ keys[i]] = state[$ keys[i]]
-		}
-	}
 };
 function _rpyp_pkl_renpy_persistent_Persistent() : _rpyp_pkl__builtin_object() constructor {
 	__module__ = "renpy.persistent"
@@ -321,6 +298,20 @@ function rpyp_pkl_pop_mark(metastack) {
 	array_pop(metastack)
 	return res
 }
+function rpyp_pkl_from_decl(str, short = false) {
+	if string_length(str) <= 0
+		throw "Decimal long string too short"
+	if string_char_at(str, string_length(str)) == "L"
+		str = string_copy(str, 0, string_length(str) - 1)
+	if short {
+		if str == "00"
+			return false
+		else if str == "01"
+			return true
+	}
+	// evil
+	return round(real(str))
+}
 
 function rpy_persistent_read_raw_buffer(buf) {
 	var pkl_version = 0;
@@ -369,6 +360,11 @@ function rpy_persistent_read_raw_buffer(buf) {
 					array_push(metastack, stack)
 					stack = []
 					break;
+				case global._pickle_opcodes.BINSTRING:
+					var len = buffer_read(buf, buffer_s32);
+					var str = rpyp_pkl_read_binstring(buf, buffer_tell(buf), len, true);
+					array_push(stack, str)
+					break;
 				case global._pickle_opcodes.SHORT_BINSTRING:
 					var len = buffer_read(buf, buffer_u8);
 					var str = rpyp_pkl_read_binstring(buf, buffer_tell(buf), len, true);
@@ -410,10 +406,12 @@ function rpy_persistent_read_raw_buffer(buf) {
 					var args = stack[array_length(stack) - 1];
 					array_pop(stack)
 					// master hax
-					//array_push(rpyp_pkl_fakeclass_new(callable, args.__content__))
-					var newobj = callable.__new__()
-					for (var i = 0; i < array_length(args); i++)
-						newobj.__setitem__(i, args[i]);
+					//array_push(rpyp_pkl_fakeclass_new(callable, args))
+					if !variable_struct_exists(callable, "__module__")
+						throw "Callable is not a class - this case is currently unsupported"
+					// callable is already a constructed class object
+					var newobj = callable.__new__() // rpyp_pkl_fakeclass_new(callable, [])
+					newobj.__setstate__(args)
 					array_push(stack, newobj)
 					break;
 				case global._pickle_opcodes.NEWTRUE:
@@ -482,9 +480,96 @@ function rpy_persistent_read_raw_buffer(buf) {
 				case global._pickle_opcodes.EXT4:
 					throw "Extensions are not supported. Corrupt persistent file?"
 					break;
+				case global._pickle_opcodes.LONG:
 				case global._pickle_opcodes.LONG1:
 				case global._pickle_opcodes.LONG4:
-					throw "Long numbers are not supported. Corrupt persistent file?"
+					throw "Long numbers are currently not supported. Corrupt persistent file?"
+					break;
+				case global._pickle_opcodes.POP:
+					if array_length(stack) > 0
+						array_pop(stack)
+					else
+						stack = rpyp_pkl_pop_mark(metastack)
+					break;
+				case global._pickle_opcodes.POP_MARK:
+					stack = rpyp_pkl_pop_mark(metastack)
+					break;
+				case global._pickle_opcodes.DUP:
+					array_push(stack, stack[array_length(stack) - 1])
+					break;
+				case global._pickle_opcodes.FLOAT:
+				case global._pickle_opcodes.INT:
+					var value = rpyp_pkl_read_line(buf)
+					array_push(stack, real(value))
+					break;
+				case global._pickle_opcodes.PERSID:
+				case global._pickle_opcodes.BINPERSID:
+					throw "Persistent IDs are not supported. Corrupt persistent file?"
+					break;
+				case global._pickle_opcodes.STRING:
+				case global._pickle_opcodes.UNICODE:
+					var value = rpyp_pkl_read_line(buf, true)
+					array_push(stack, string_copy(value, 1, string_length(value) - 1))
+					break;
+				case global._pickle_opcodes.APPEND:
+					var value = stack[array_length(stack) - 1]
+					array_pop(stack)
+					array_push(stack[array_length(stack) - 1], value)
+					break;
+				case global._pickle_opcodes.DICT:
+				    var items = stack
+					stack = rpyp_pkl_pop_mark(metastack)
+			        var dict = rpyp_pkl_fakeclass_new(rpyp_pkl_get_class("__builtin__", "dict"), [])
+					for (var i = 0; i < array_length(items); i += 2)
+						dict.__setitem__(items[i], items[i + 1])
+			        array_push(stack, dict)
+					break;
+				case global._pickle_opcodes.GET:
+					var index = rpyp_pkl_from_decl(rpyp_pkl_read_line(buf))
+					array_push(stack, memo[index])
+					break;
+				case global._pickle_opcodes.INST:
+					var origin = rpyp_pkl_read_line(buf)
+					var class = rpyp_pkl_read_line(buf)
+					var class_obj = rpyp_pkl_get_class(origin, class)
+					var orig_stack = stack
+					stack = rpyp_pkl_pop_mark(metastack)
+					array_push(stack, rpyp_pkl_fakeclass_new(class_obj, orig_stack))
+					break;
+				case global._pickle_opcodes.OBJ:
+					var args = stack
+					stack = rpyp_pkl_pop_mark(metastack)
+					var class_obj = stack[0]
+					array_delete(stack, 0, 1)
+					array_push(stack, rpyp_pkl_fakeclass_new(class_obj, args))
+					break;
+				case global._pickle_opcodes.LIST:
+				    var items = stack
+					stack = rpyp_pkl_pop_mark(metastack)
+					// GM bug
+			        var list = rpyp_pkl_fakeclass_new(rpyp_pkl_get_class("__builtin__", "list"), [])
+					list.__setstate__(items)
+			        array_push(stack, list)
+					break;
+				case global._pickle_opcodes.PUT:
+					var loc = rpyp_pkl_from_decl(rpyp_pkl_read_line(buf))
+					array_set(memo, loc, stack[array_length(stack) - 1])
+					break;
+				case global._pickle_opcodes.SETITEM:
+					var value = stack[array_length(stack) - 1]
+					array_pop(stack)
+					var key = stack[array_length(stack) - 1]
+					array_pop(stack)
+					var dict = stack[array_length(stack) - 1]
+					dict.__setitem__(key, value)
+					break;
+				case global._pickle_opcodes.TUPLE:
+				    var items = stack
+					stack = rpyp_pkl_pop_mark(metastack)
+					// GM bug
+			        var list = rpyp_pkl_fakeclass_new(rpyp_pkl_get_class("__builtin__", "tuple"), [])
+					list.__setstate__(items)
+			        array_push(stack, list)
 					break;
 				default:
 					throw "Unknown opcode " + string(inst);
@@ -500,6 +585,7 @@ function rpy_persistent_read_raw_buffer(buf) {
 				throw _e
 			}
 		} else {
+			show_debug_message(_e)
 			throw (_e.message + "\nBuffer read to position " + string(buffer_tell(buf)))
 		}
 	}
@@ -521,4 +607,22 @@ function rpy_persistent_read(fn){
 	var ret = rpy_persistent_read_buffer(orig_file)
 	buffer_delete(orig_file)
 	return ret
+}
+function rpy_persistent_convert_from_abstract(obj) {
+	var struct = {};
+	var keys = variable_struct_get_names(obj);
+	for (var i = 0; i < array_length(keys); i++) {
+		var key = keys[i]
+		var value = obj[$ key]
+		if string_copy(key, 0, 2) == "__" && string_copy(key, string_length(key) - 1, 2) == "__"
+			continue;
+		if is_struct(value) {
+			if variable_struct_exists(value, "__content__")
+				value = value.__content__
+			else
+				value = rpy_persistent_convert_from_abstract(value)
+		}
+		struct[$ key] = value
+	}
+	return struct;
 }
