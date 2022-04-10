@@ -373,47 +373,34 @@ function _rpyp_pkl_renpy_python_RevertableSet() : _rpyp_pkl__builtin_set() const
 	__bases__ = [_rpyp_pkl__builtin_set, _rpyp_pkl__builtin_object]
 };
 
+// Due of a very weird bug, this is a if-else chain
 function rpyp_pkl_get_class(class, name) {
-	switch (class + "." + name) {
-		case "__builtin__.object":
-			return new _rpyp_pkl__builtin_object();
-			break;
-		case "__builtin__.tuple":
-			return new _rpyp_pkl__builtin_tuple();
-			break;
-		case "__builtin__.dict":
-			return new _rpyp_pkl__builtin_dict();
-			break;
-		case "__builtin__.set":
-			return new _rpyp_pkl__builtin_set();
-			break;
-		case "__builtin__.frozenset":
-			return new _rpyp_pkl__builtin_frozenset();
-			break;
-		case "__builtin__.list":
-			return new _rpyp_pkl__builtin_list();
-			break;
-		case "renpy.persistent.Persistent":
-			return new _rpyp_pkl_renpy_persistent_Persistent();
-			break;
-		case "renpy.python.RevertableDict":
-			return new _rpyp_pkl_renpy_python_RevertableDict();
-			break;
-		case "renpy.python.RevertableList":
-			return new _rpyp_pkl_renpy_python_RevertableList();
-			break;
-		case "renpy.python.RevertableSet":
-			return new _rpyp_pkl_renpy_python_RevertableSet();
-			break;
-		case "renpy.preferences.Preferences":
-			return new _rpyp_pkl_renpy_preferences_Preferences();
-			break;
-		default:
-			throw "Unknown class " + class + "." + name;
-			break;
-	}
-	return undefined;
+    if (class + "." + name) == "__builtin__.object"
+        return new _rpyp_pkl__builtin_object();
+    else if (class + "." + name) == "__builtin__.tuple"
+        return new _rpyp_pkl__builtin_tuple();
+    else if (class + "." + name) == "__builtin__.dict"
+        return new _rpyp_pkl__builtin_dict();
+    else if (class + "." + name) == "__builtin__.set"
+        return new _rpyp_pkl__builtin_set();
+    else if (class + "." + name) == "__builtin__.frozenset"
+        return new _rpyp_pkl__builtin_frozenset();
+    else if (class + "." + name) == "__builtin__.list"
+        return new _rpyp_pkl__builtin_list();
+    else if (class + "." + name) == "renpy.persistent.Persistent"
+        return new _rpyp_pkl_renpy_persistent_Persistent();
+    else if (class + "." + name) == "renpy.python.RevertableDict"
+        return new _rpyp_pkl_renpy_python_RevertableDict();
+    else if (class + "." + name) == "renpy.python.RevertableList"
+        return new _rpyp_pkl_renpy_python_RevertableList();
+    else if (class + "." + name) == "renpy.python.RevertableSet"
+        return new _rpyp_pkl_renpy_python_RevertableSet();
+    else if (class + "." + name) == "renpy.preferences.Preferences"
+        return new _rpyp_pkl_renpy_preferences_Preferences();
+
+	throw "Unknown class " + class + "." + name;
 }
+
 function rpyp_pkl_fakeclass_callnew(class, args) {
 	// Waiting for a GM bug to be fixed
 	// return script_execute_ext(class.__new__, args);
