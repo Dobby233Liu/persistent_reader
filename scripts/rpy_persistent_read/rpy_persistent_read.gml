@@ -110,21 +110,6 @@ global._pickle_opcodes = {
 	READONLY_BUFFER  : "\x98",
 }
 
-// escaped strings parsing is currently not supported
-function rpyp_pkl_read_binstring(buf, startpoint, len, movecursor = true, escape = false) {
-	if len == 0
-		return ""
-	else if buffer_get_size(buf) < (startpoint + len)
-		throw "String length out of bounds";
-	var _buf = buffer_create(len, buffer_fixed, 2)
-	buffer_copy(buf, startpoint, len, _buf, 0)
-	str = buffer_read(_buf, buffer_text)
-	buffer_delete(_buf)
-	if movecursor
-		buffer_seek(buf, buffer_seek_start, startpoint + len)
-	return str
-}
-
 // From https://forum.yoyogames.com/index.php?threads/endianness-aware-built-in-functions.94360/
 function rpyp_pkl_is_native_little_endian() {
 	static memoized_value = (function() {
@@ -164,6 +149,20 @@ function rpyp_pkl_read_bef64(buf, movecursor = true) {
 	return fend;
 }
 
+// escaped strings parsing is currently not supported
+function rpyp_pkl_read_binstring(buf, startpoint, len, movecursor = true, escape = false) {
+	if len == 0
+		return ""
+	else if buffer_get_size(buf) < (startpoint + len)
+		throw "String length out of bounds";
+	var _buf = buffer_create(len, buffer_fixed, 2)
+	buffer_copy(buf, startpoint, len, _buf, 0)
+	str = buffer_read(_buf, buffer_text)
+	buffer_delete(_buf)
+	if movecursor
+		buffer_seek(buf, buffer_seek_start, startpoint + len)
+	return str
+}
 function rpyp_pkl_read_line(buf, escape = false) {
 	var startpoint = buffer_tell(buf)
 	var endpoint = startpoint
@@ -177,6 +176,21 @@ function rpyp_pkl_read_line(buf, escape = false) {
 		}
 	}
 	return rpyp_pkl_read_binstring(buf, startpoint, endpoint - startpoint, false, escape);
+}
+
+function rpyp_pkl_from_decl(str, short = false) {
+	if string_length(str) <= 0
+		throw "Decimal long string too short"
+	if string_char_at(str, string_length(str)) == "L"
+		str = string_copy(str, 0, string_length(str) - 1)
+	if short {
+		if str == "00"
+			return false
+		else if str == "01"
+			return true
+	}
+	// evil
+	return round(real(str))
 }
 
 function _rpyp_pkl__builtin_object() constructor {
@@ -410,25 +424,13 @@ function rpyp_pkl_fakeclass_new(class, args) {
 function rpyp_pkl_fakeclass_isinstance(inst, module, name) {
 	return variable_struct_exists(inst, "__module__") && inst.__module__ == module && inst.__name__ == name
 }
+
 function rpyp_pkl_pop_mark(metastack) {
 	var res = metastack[array_length(metastack) - 1]
 	array_pop(metastack)
 	return res
 }
-function rpyp_pkl_from_decl(str, short = false) {
-	if string_length(str) <= 0
-		throw "Decimal long string too short"
-	if string_char_at(str, string_length(str)) == "L"
-		str = string_copy(str, 0, string_length(str) - 1)
-	if short {
-		if str == "00"
-			return false
-		else if str == "01"
-			return true
-	}
-	// evil
-	return round(real(str))
-}
+
 function rpyp_pkl_to_array(dict) {
 	var keys = variable_struct_get_names(dict).__content__;
 	var arr = [];
@@ -437,9 +439,10 @@ function rpyp_pkl_to_array(dict) {
 	}
 	return arr
 }
+
 function rpyp_pkl_callfunc(callable, args) {
 	if is_struct(callable) {
-		if !variable_struct_exists(callable, "__module__")
+		if !variable_struct_exists(callable, "__name__")
 			throw "Object is not callable"
 		// GM bug
 		// return rpyp_pkl_fakeclass_new(callable, args)
@@ -447,7 +450,7 @@ function rpyp_pkl_callfunc(callable, args) {
 		newobj.__setstate_special__(args)
 		return newobj
 	} else if is_method(callable) {
-		// possible GM bug
+		// GM bug
 		return script_execute_ext(callable, args)
 	} else {
 		throw "Object is not callable"
@@ -558,14 +561,11 @@ function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
 					array_push(stack, obj)
 					break;
 				case global._pickle_opcodes.REDUCE:
-					// i'm being lazy here
+					// FIXME: how did this even work.
 					var callable = stack[array_length(stack) - 1];
 					array_pop(stack)
 					var args = stack[array_length(stack) - 1];
-					array_pop(stack)
-					// master hax
-					var res = rpyp_pkl_callfunc(callable, args)
-					array_push(stack, res)
+					stack[array_length(stack) - 1] = rpyp_pkl_callfunc(callable, args)
 					break;
 				case global._pickle_opcodes.NEWTRUE:
 					array_push(stack, true)

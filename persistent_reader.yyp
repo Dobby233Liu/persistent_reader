@@ -42,6 +42,8 @@
   ],
   "IncludedFiles": [
     {"CopyToMask":-1,"filePath":"datafiles","resourceVersion":"1.0","name":"persistent","resourceType":"GMIncludedFile",},
+    {"CopyToMask":-1,"filePath":"datafiles","resourceVersion":"1.0","name":"a.txt","resourceType":"GMIncludedFile",},
+    {"CopyToMask":-1,"filePath":"datafiles","resourceVersion":"1.0","name":"a.txt.bak","resourceType":"GMIncludedFile",},
   ],
   "MetaData": {
     "IDEVersion": "2022.3.0.625",
