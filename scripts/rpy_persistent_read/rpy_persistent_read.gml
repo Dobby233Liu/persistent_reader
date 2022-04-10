@@ -439,6 +439,8 @@ function rpyp_pkl_to_array(dict) {
 }
 
 function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
+	// prevent strange stuff from happening
+	gc_enable(false);
 	var pkl_version = 0;
 	var memo = []
 	var stack = []
@@ -808,6 +810,8 @@ function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
 				le_stacktrace += _e.stacktrace[i] + "\n"
 			throw _e.message + "\nBuffer read to position " + string(buffer_tell(buf)) + "\n" + le_stacktrace
 		}
+	} finally {
+		gc_enable(true);
 	}
 	if !correctly_stopped {
 		throw "EOF reached while reading buffer, however STOP opcode is not called"
