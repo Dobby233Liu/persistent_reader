@@ -1,7 +1,7 @@
 # persistent_reader
 
 This is a very epicly 100% genius hacked together DDLC persistent reader for GameMaker.
-Specifically, this is a thing that can decompress Ren'Py persistents and "unpickle" the resulting data (converting it into a struct), made in freaking GameMaker. Really, it can unpickle nearly every normally crafted Protocol 2 pickle files, with the right setup.
+Specifically, this is a thing that can decompress Ren'Py persistents and "unpickle" the resulting data (converting it into a struct), made in freaking GameMaker. Really, it (probably) can unpickle any normally crafted Protocol 2 pickle files, with the right setup.
 
 This is primaryly made for a project, and you shouldn't really use it, because it's really hacky, inaccurate and low-performance.
 

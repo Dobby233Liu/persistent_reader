@@ -437,6 +437,20 @@ function rpyp_pkl_to_array(dict) {
 	}
 	return arr
 }
+function rpyp_pkl_callfunc(callable, args) {
+	if is_struct(callable) {
+		if !variable_struct_exists(callable, "__module__")
+			throw "Object is not callable"
+		// GM bug
+		// return rpyp_pkl_fakeclass_new(callable, args)
+		var newobj = rpyp_pkl_fakeclass_callnew(callable, [])
+		newobj.__setstate_special__(args)
+		return newobj
+	} else if is_method(callable) {
+		// possible GM bug
+		return script_execute_ext(callable, args)
+	}
+}
 
 function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
 	// prevent strange stuff from happening
@@ -548,12 +562,8 @@ function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
 					var args = stack[array_length(stack) - 1];
 					array_pop(stack)
 					// master hax
-					//array_push(rpyp_pkl_fakeclass_new(callable, args))
-					if !variable_struct_exists(callable, "__module__")
-						throw "Callable is not a class - this case is currently unsupported"
-					var newobj = rpyp_pkl_fakeclass_callnew(callable, [])
-					newobj.__setstate_special__(args)
-					array_push(stack, newobj)
+					var res = rpyp_pkl_callfunc(callable, args)
+					array_push(stack, res)
 					break;
 				case global._pickle_opcodes.NEWTRUE:
 					array_push(stack, true)
