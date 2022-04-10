@@ -376,42 +376,43 @@ function _rpyp_pkl_renpy_python_RevertableSet() : _rpyp_pkl__builtin_set() const
 function rpyp_pkl_get_class(class, name) {
 	switch (class + "." + name) {
 		case "__builtin__.object":
-			return _rpyp_pkl__builtin_object;
+			return new _rpyp_pkl__builtin_object();
 			break;
 		case "__builtin__.tuple":
-			return _rpyp_pkl__builtin_tuple;
+			return new _rpyp_pkl__builtin_tuple();
 			break;
 		case "__builtin__.dict":
-			return _rpyp_pkl__builtin_dict;
+			return new _rpyp_pkl__builtin_dict();
 			break;
 		case "__builtin__.set":
-			return _rpyp_pkl__builtin_set;
+			return new _rpyp_pkl__builtin_set();
 			break;
 		case "__builtin__.frozenset":
-			return _rpyp_pkl__builtin_frozenset;
+			return new _rpyp_pkl__builtin_frozenset();
 			break;
 		case "__builtin__.list":
-			return _rpyp_pkl__builtin_list;
+			return new _rpyp_pkl__builtin_list();
 			break;
 		case "renpy.persistent.Persistent":
-			return _rpyp_pkl_renpy_persistent_Persistent;
+			return new _rpyp_pkl_renpy_persistent_Persistent();
 			break;
 		case "renpy.python.RevertableDict":
-			return _rpyp_pkl_renpy_python_RevertableDict;
+			return new _rpyp_pkl_renpy_python_RevertableDict();
 			break;
 		case "renpy.python.RevertableList":
-			return _rpyp_pkl_renpy_python_RevertableList;
+			return new _rpyp_pkl_renpy_python_RevertableList();
 			break;
 		case "renpy.python.RevertableSet":
-			return _rpyp_pkl_renpy_python_RevertableSet;
+			return new _rpyp_pkl_renpy_python_RevertableSet();
 			break;
 		case "renpy.preferences.Preferences":
-			return _rpyp_pkl_renpy_preferences_Preferences;
+			return new _rpyp_pkl_renpy_preferences_Preferences();
 			break;
 		default:
 			throw "Unknown class " + class + "." + name;
 			break;
 	}
+	return undefined;
 }
 function rpyp_pkl_fakeclass_callnew(class, args) {
 	// Waiting for a GM bug to be fixed
@@ -419,7 +420,7 @@ function rpyp_pkl_fakeclass_callnew(class, args) {
 	return class.__new__()
 }
 function rpyp_pkl_fakeclass_new(class, args) {
-	return rpyp_pkl_fakeclass_callnew(new class(), args);
+	return rpyp_pkl_fakeclass_callnew(class, args);
 }
 function rpyp_pkl_fakeclass_isinstance(inst, module, name) {
 	return variable_struct_exists(inst, "__module__") && inst.__module__ == module && inst.__name__ == name
@@ -441,7 +442,11 @@ function rpyp_pkl_to_array(dict) {
 }
 
 function rpyp_pkl_callfunc(callable, args) {
-	if is_struct(callable) {
+	if is_method(callable) {
+		// GM bug
+		// return script_execute_ext(callable, args.__content__)
+		return callable()
+	} else if is_struct(callable) {
 		if !variable_struct_exists(callable, "__name__")
 			throw "Object is not callable"
 		// GM bug
@@ -449,9 +454,6 @@ function rpyp_pkl_callfunc(callable, args) {
 		var newobj = rpyp_pkl_fakeclass_callnew(callable, [])
 		newobj.__setstate_special__(args)
 		return newobj
-	} else if is_method(callable) {
-		// GM bug
-		return script_execute_ext(callable, args)
 	} else {
 		throw "Object is not callable"
 	}
@@ -561,10 +563,9 @@ function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
 					array_push(stack, obj)
 					break;
 				case global._pickle_opcodes.REDUCE:
-					// FIXME: how did this even work.
-					var callable = stack[array_length(stack) - 1];
-					array_pop(stack)
 					var args = stack[array_length(stack) - 1];
+					array_pop(stack)
+					var callable = stack[array_length(stack) - 1];
 					stack[array_length(stack) - 1] = rpyp_pkl_callfunc(callable, args)
 					break;
 				case global._pickle_opcodes.NEWTRUE:
@@ -830,14 +831,15 @@ function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
 	}
 	return value;
 }
+
 function rpy_persistent_read_buffer(cmp_buff, find_class=rpyp_pkl_get_class) {
 	var pickle_buff = buffer_decompress(cmp_buff)
 	try {
-		var ret = rpy_persistent_read_raw_buffer(pickle_buff, find_class)
+		return rpy_persistent_read_raw_buffer(pickle_buff, find_class)
 	} finally {
 		buffer_delete(pickle_buff)
 	}
-	return ret
+	return undefined;
 }
 function rpy_persistent_read(fn, find_class=rpyp_pkl_get_class){
 	try {
@@ -849,6 +851,19 @@ function rpy_persistent_read(fn, find_class=rpyp_pkl_get_class){
 		buffer_delete(orig_file)
 	}
 	return ret
+}
+function rpy_persistent_read_uncompressed(fn, find_class=rpyp_pkl_get_class){
+	var orig_file = undefined;
+	try {
+		orig_file = buffer_load(fn);
+		if !buffer_exists(orig_file)
+			throw "Can't load file " + fn;
+		return rpy_persistent_read_raw_buffer(orig_file, find_class)
+	} finally {
+		if orig_file != undefined
+			buffer_delete(orig_file)
+	}
+	return undefined;
 }
 
 function rpy_persistent_convert_from_abstract(obj) {
