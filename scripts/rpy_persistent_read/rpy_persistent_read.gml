@@ -449,6 +449,8 @@ function rpyp_pkl_callfunc(callable, args) {
 	} else if is_method(callable) {
 		// possible GM bug
 		return script_execute_ext(callable, args)
+	} else {
+		throw "Object is not callable"
 	}
 }
 
