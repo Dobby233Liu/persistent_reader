@@ -126,6 +126,7 @@ function rpyp_pkl_is_native_little_endian() {
 	return memoized_value;
 }
 // Based on https://forum.yoyogames.com/index.php?threads/reverse-a-string.33407/post-206775
+// FIXME: this still outputs bad results
 function rpyp_pkl_read_bef64(buf, movecursor = true) {
 	var fend, n = 8;
 	if rpyp_pkl_is_native_little_endian() {
@@ -193,17 +194,17 @@ function rpyp_pkl_from_decl(str, short = false) {
 	return round(real(str))
 }
 
+#macro _RPYP_PKL_COPY_ARGS  var args = []; \
+	for (var i = 0; i < argument_count; i++) \
+		array_push(args, argument[i]);
+
 function _rpyp_pkl__builtin_object() constructor {
 	__module__ = "__builtin__"
 	__name__ = "object"
 	__bases__ = []
 	static __new__ = function () {
-		// Waiting for a GM bug to be fixed
-		/*var args = [];
-		for (var i = 0; i < argument_count; i++)
-			array_push(args, argument[i]);
-		script_execute_ext(__init__, args);*/
-		script_execute(__init__);
+		_RPYP_PKL_COPY_ARGS;
+		script_execute_ext(method_get_index(__init__), args);
 		return self;
 	}
 	static __init__ = function () {}
@@ -228,6 +229,10 @@ function _rpyp_pkl__builtin_tuple() : _rpyp_pkl__builtin_object() constructor {
 	__content__ = []
 	__brackets_l__ = "("
 	__brackets_r__ = ")"
+	static __init__ = function() {
+		for (var i = 0; i < argument_count; i++)
+			__setitem__(i, argument[i]);
+	}
 	static __get_content__ = function () {
 		return __content__
 	}
@@ -242,10 +247,6 @@ function _rpyp_pkl__builtin_tuple() : _rpyp_pkl__builtin_object() constructor {
 	}
 	static __delitem__ = function (key) {
 		__content__[key] = undefined;
-	}
-	static __setstate_special__ = function (state) {
-		__content__ = state
-		return self;
 	}
 	__setstate__ = undefined
 	static toString = function () {
@@ -264,11 +265,6 @@ function _rpyp_pkl__builtin_set() : _rpyp_pkl__builtin_tuple() constructor {
 	__bases__ = [_rpyp_pkl__builtin_object]
 	__brackets_l__ = "set(("
 	__brackets_r__ = "))"
-	// Waiting for a GM bug to be fixed
-	//static __init__ = function() {
-	//	for (var i = 0; i < argument_count; i++)
-	//		__setitem__(i, argument[i]);
-	//}
 	static add = function(value) {
 		array_push(__content__, value)
 	}
@@ -283,11 +279,6 @@ function _rpyp_pkl__builtin_frozenset() : _rpyp_pkl__builtin_set() constructor {
 	__bases__ = [_rpyp_pkl__builtin_set, _rpyp_pkl__builtin_object]
 	__brackets_l__ = "frozenset({"
 	__brackets_r__ = "})"
-	// Waiting for a GM bug to be fixed
-	//static __init__ = function() {
-	//	for (var i = 0; i < argument_count; i++)
-	//		__setitem__(i, argument[i]);
-	//}
 	static add = function(value) {
 		throw "Modification disallowed"
 	}
@@ -321,6 +312,11 @@ function _rpyp_pkl__builtin_dict() : _rpyp_pkl__builtin_object() constructor {
 	__brackets_l__ = "{"
 	__brackets_r__ = "}"
 	__dict__ = self
+	static __init__ = function() {
+		if argument_count > 0 {
+			throw "Unimplemented";
+		}
+	}
 	static __get_content__ = function () {
 		return __content__
 	}
@@ -338,13 +334,6 @@ function _rpyp_pkl__builtin_dict() : _rpyp_pkl__builtin_object() constructor {
 	}
 	static toString = function () {
 		return string(__content__);
-	}
-	static update = function (dict) {
-		var keys = variable_struct_get_names(dict.__content__);
-		for (var i = 0; i < array_length(keys); i++) {
-		    self[$ keys[i]] = dict.__content__[$ keys[i]]
-		}
-		return self;
 	}
 };
 function _rpyp_pkl_renpy_persistent_Persistent() : _rpyp_pkl__builtin_object() constructor {
@@ -367,47 +356,75 @@ function _rpyp_pkl_renpy_python_RevertableList() : _rpyp_pkl__builtin_list() con
 	__name__ = "RevertableList"
 	__bases__ = [_rpyp_pkl__builtin_list, _rpyp_pkl__builtin_object]
 };
-function _rpyp_pkl_renpy_python_RevertableSet() : _rpyp_pkl__builtin_set() constructor {
+// this needs to be done for some reason
+function _rpyp_pkl_renpy_python_RevertableSet() : _rpyp_pkl__builtin_tuple() constructor {
 	__module__ = "renpy.python"
 	__name__ = "RevertableSet"
 	__bases__ = [_rpyp_pkl__builtin_set, _rpyp_pkl__builtin_object]
+	__brackets_l__ = "set(("
+	__brackets_r__ = "))"
+	static add = function(value) {
+		array_push(__content__, value)
+	}
+	__setstate__ = function (state) {
+		for (var i = 0; i < array_length(state); i++)
+			array_push(__content__, state[i])
+	}
 };
 
-// Due of a very weird bug, this is a if-else chain
 function rpyp_pkl_get_class(class, name) {
-    if (class + "." + name) == "__builtin__.object"
-        return new _rpyp_pkl__builtin_object();
-    else if (class + "." + name) == "__builtin__.tuple"
-        return new _rpyp_pkl__builtin_tuple();
-    else if (class + "." + name) == "__builtin__.dict"
-        return new _rpyp_pkl__builtin_dict();
-    else if (class + "." + name) == "__builtin__.set"
-        return new _rpyp_pkl__builtin_set();
-    else if (class + "." + name) == "__builtin__.frozenset"
-        return new _rpyp_pkl__builtin_frozenset();
-    else if (class + "." + name) == "__builtin__.list"
-        return new _rpyp_pkl__builtin_list();
-    else if (class + "." + name) == "renpy.persistent.Persistent"
-        return new _rpyp_pkl_renpy_persistent_Persistent();
-    else if (class + "." + name) == "renpy.python.RevertableDict"
-        return new _rpyp_pkl_renpy_python_RevertableDict();
-    else if (class + "." + name) == "renpy.python.RevertableList"
-        return new _rpyp_pkl_renpy_python_RevertableList();
-    else if (class + "." + name) == "renpy.python.RevertableSet"
-        return new _rpyp_pkl_renpy_python_RevertableSet();
-    else if (class + "." + name) == "renpy.preferences.Preferences"
-        return new _rpyp_pkl_renpy_preferences_Preferences();
-
-	throw "Unknown class " + class + "." + name;
+	switch (class + "." + name) {
+		case "__builtin__.object":
+			return _rpyp_pkl__builtin_object;
+			break;
+		case "__builtin__.tuple":
+			return _rpyp_pkl__builtin_tuple;
+			break;
+		case "__builtin__.dict":
+			return _rpyp_pkl__builtin_dict;
+			break;
+		case "__builtin__.set":
+			return _rpyp_pkl__builtin_set;
+			break;
+		case "__builtin__.frozenset":
+			return _rpyp_pkl__builtin_frozenset;
+			break;
+		case "__builtin__.list":
+			return _rpyp_pkl__builtin_list;
+			break;
+		case "renpy.persistent.Persistent":
+			return _rpyp_pkl_renpy_persistent_Persistent;
+			break;
+		case "renpy.python.RevertableDict":
+			return _rpyp_pkl_renpy_python_RevertableDict;
+			break;
+		case "renpy.python.RevertableList":
+			return _rpyp_pkl_renpy_python_RevertableList;
+			break;
+		case "renpy.python.RevertableSet":
+			return _rpyp_pkl_renpy_python_RevertableSet;
+			break;
+		case "renpy.preferences.Preferences":
+			return _rpyp_pkl_renpy_preferences_Preferences;
+			break;
+		default:
+			throw "Unknown class " + class + "." + name;
+			break;
+	}
+	return undefined;
 }
 
-function rpyp_pkl_fakeclass_callnew(class, args) {
-	// Waiting for a GM bug to be fixed
-	// return script_execute_ext(class.__new__, args);
-	return class.__new__()
+/*function rpyp_pkl_fakeclass_callnew(class, args) {
+	return script_execute_ext(method_get_index(class.__new__), args);
+}*/
+function rpyp_pkl_fakeclass_callnew_self(args) {
+	return script_execute_ext(method_get_index(__new__), args);
 }
 function rpyp_pkl_fakeclass_new(class, args) {
-	return rpyp_pkl_fakeclass_callnew(class, args);
+	if is_numeric(class)
+		class = method(self, class)
+	var obj = new class();
+	return method(obj, rpyp_pkl_fakeclass_callnew_self)(args);
 }
 function rpyp_pkl_fakeclass_isinstance(inst, module, name) {
 	return variable_struct_exists(inst, "__module__") && inst.__module__ == module && inst.__name__ == name
@@ -419,28 +436,33 @@ function rpyp_pkl_pop_mark(metastack) {
 	return res
 }
 
-function rpyp_pkl_to_array(dict) {
+/*function rpyp_pkl_to_array(dict) {
 	var keys = variable_struct_get_names(dict).__content__;
 	var arr = [];
 	for (var i = 0; i < array_length(keys); i++) {
 		array_push(arr, dict[$ keys[i]])
 	}
 	return arr
-}
+}*/
 
 function rpyp_pkl_callfunc(callable, args) {
-	if is_method(callable) {
-		// GM bug
-		// return script_execute_ext(callable, args.__content__)
-		return callable()
+	if is_method(callable) || (is_numeric(callable) && is_method(method(self, callable))) {
+		var args_real = args
+		if is_struct(args) {
+			if !variable_struct_exists(args, "__content__") || !is_array(args.__content__)
+				throw "Class is not an array-like fake Python class"
+			args_real = args.__content__
+		} else if !is_array(args) {
+			throw "args argument is not an array"
+		}
+		var callable_real = callable
+		if is_method(callable_real)
+			callable_real = method_get_index(callable_real)
+		return script_execute_ext(callable_real, args_real)
 	} else if is_struct(callable) {
 		if !variable_struct_exists(callable, "__name__")
-			throw "Object is not callable"
-		// GM bug
-		// return rpyp_pkl_fakeclass_new(callable, args)
-		var newobj = rpyp_pkl_fakeclass_callnew(callable, [])
-		newobj.__setstate_special__(args)
-		return newobj
+			throw "Not an fake Python class"
+		return rpyp_pkl_fakeclass_new(callable, args)
 	} else {
 		throw "Object is not callable"
 	}
@@ -470,7 +492,8 @@ function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
 				case global._pickle_opcodes.GLOBAL:
 					var origin = rpyp_pkl_read_line(buf)
 					var class = rpyp_pkl_read_line(buf)
-					array_push(stack, find_class(origin, class))
+					class = method(self, find_class(origin, class))
+					array_push(stack, class)
 					break;
 				case global._pickle_opcodes.STACK_GLOBAL:
 					var origin = stack[array_length(stack) - 2]
@@ -543,9 +566,7 @@ function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
 					stack[array_length(stack) - 1].extend(contents);
 					break;
 				case global._pickle_opcodes.TUPLE1:
-					// Waiting for a GM bug to be fixed to just supply content as second arg
-					var obj = rpyp_pkl_fakeclass_new(find_class("__builtin__", "tuple"), []);
-					obj.__content__ = [stack[array_length(stack) - 1]]
+					var obj = rpyp_pkl_fakeclass_new(find_class("__builtin__", "tuple"), [stack[array_length(stack) - 1]]);
 					array_pop(stack)
 					array_push(stack, obj)
 					break;
@@ -568,17 +589,13 @@ function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
 					array_push(stack, buffer_read(buf, buffer_u16))
 					break;
 				case global._pickle_opcodes.TUPLE2:
-					// Waiting for a GM bug to be fixed to just supply content as second arg
-					var obj = rpyp_pkl_fakeclass_new(find_class("__builtin__", "tuple"), []);
-					obj.__content__ = [stack[array_length(stack) - 1], stack[array_length(stack) - 2]]
+					var obj = rpyp_pkl_fakeclass_new(find_class("__builtin__", "tuple"), [stack[array_length(stack) - 1], stack[array_length(stack) - 2]]);
 					array_pop(stack)
 					array_pop(stack)
 					array_push(stack, obj)
 					break;
 				case global._pickle_opcodes.TUPLE3:
-					// Waiting for a GM bug to be fixed to just supply content as second arg
-					var obj = rpyp_pkl_fakeclass_new(find_class("__builtin__", "tuple"), []);
-					obj.__content__ = [stack[array_length(stack) - 1], stack[array_length(stack) - 2], stack[array_length(stack) - 3]]
+					var obj = rpyp_pkl_fakeclass_new(find_class("__builtin__", "tuple"), [stack[array_length(stack) - 1], stack[array_length(stack) - 2], stack[array_length(stack) - 3]]);
 					array_pop(stack)
 					array_pop(stack)
 					array_pop(stack)
@@ -721,9 +738,7 @@ function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
 				case global._pickle_opcodes.LIST:
 				    var items = stack
 					stack = rpyp_pkl_pop_mark(metastack)
-					// GM bug
-			        var list = rpyp_pkl_fakeclass_new(find_class("__builtin__", "list"), [])
-					list.__setstate_special__(items)
+			        var list = rpyp_pkl_fakeclass_new(find_class("__builtin__", "list"), items)
 			        array_push(stack, list)
 					break;
 				case global._pickle_opcodes.PUT:
@@ -741,9 +756,7 @@ function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
 				case global._pickle_opcodes.TUPLE:
 				    var items = stack
 					stack = rpyp_pkl_pop_mark(metastack)
-					// GM bug
-			        var list = rpyp_pkl_fakeclass_new(find_class("__builtin__", "tuple"), [])
-					list.__setstate_special__(items)
+			        var list = rpyp_pkl_fakeclass_new(find_class("__builtin__", "tuple"), items)
 			        array_push(stack, list)
 					break;
 				case global._pickle_opcodes.BINUNICODE8:
