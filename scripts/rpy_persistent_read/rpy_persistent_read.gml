@@ -130,18 +130,24 @@ function rpyp_pkl_is_native_little_endian() {
 function rpyp_pkl_read_bef64(buf, movecursor = true) {
 	var fend, n = 8;
 	if rpyp_pkl_is_native_little_endian() {
-		var b1 = buffer_create(n + 1, buffer_fixed, 2);
-		var b2 = buffer_create(n + 1, buffer_fixed, 2);
-		buffer_copy(buf, buffer_tell(buf), n + 1, b1, 0)
-		var i = n;
-		while (buffer_tell(b1) < n) {
-			var c = buffer_read(b1, buffer_u8);
-			buffer_poke(b2, --i, buffer_u8, c);
+		var b1 = undefined, b2 = undefined;
+		try {
+			b1 = buffer_create(n + 1, buffer_fixed, 2);
+			b2 = buffer_create(n + 1, buffer_fixed, 2);
+			buffer_copy(buf, buffer_tell(buf), n + 1, b1, 0)
+			var i = n;
+			while (buffer_tell(b1) < n) {
+				var c = buffer_read(b1, buffer_u8);
+				buffer_poke(b2, --i, buffer_u8, c);
+			}
+			buffer_seek(b2, buffer_seek_start, 0);
+			fend = buffer_read(b2, buffer_f64);
+		} finally {
+			if buffer_exists(b1)
+				buffer_delete(b1)
+			if buffer_exists(b2)
+				buffer_delete(b2)
 		}
-		buffer_seek(b2, buffer_seek_start, 0);
-		fend = buffer_read(b2, buffer_f64);
-		buffer_delete(b1)
-		buffer_delete(b2)
 	} else {
 		fend = buffer_peek(buf, buffer_tell(buf), buffer_f64)
 	}
