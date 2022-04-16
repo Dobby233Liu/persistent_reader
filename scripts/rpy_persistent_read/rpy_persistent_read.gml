@@ -839,24 +839,28 @@ function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
 }
 
 function rpy_persistent_read_buffer(cmp_buff, find_class=rpyp_pkl_get_class) {
-	var pickle_buff = buffer_decompress(cmp_buff)
+	var pickle_buff = undefined
 	try {
+		pickle_buff = buffer_decompress(cmp_buff)
 		return rpy_persistent_read_raw_buffer(pickle_buff, find_class)
 	} finally {
-		buffer_delete(pickle_buff)
+		if buffer_exists(pickle_buff)
+			buffer_delete(pickle_buff)
 	}
 	return undefined;
 }
 function rpy_persistent_read(fn, find_class=rpyp_pkl_get_class){
+	var orig_file = undefined;
 	try {
-		var orig_file = buffer_load(fn);
+		orig_file = buffer_load(fn);
 		if !buffer_exists(orig_file)
 			throw "Can't load file " + fn;
-		var ret = rpy_persistent_read_buffer(orig_file, find_class)
+		return rpy_persistent_read_buffer(orig_file, find_class)
 	} finally {
-		buffer_delete(orig_file)
+		if buffer_exists(orig_file)
+			buffer_delete(orig_file)
 	}
-	return ret
+	return undefined;
 }
 function rpy_persistent_read_uncompressed(fn, find_class=rpyp_pkl_get_class){
 	var orig_file = undefined;
@@ -866,25 +870,27 @@ function rpy_persistent_read_uncompressed(fn, find_class=rpyp_pkl_get_class){
 			throw "Can't load file " + fn;
 		return rpy_persistent_read_raw_buffer(orig_file, find_class)
 	} finally {
-		if orig_file != undefined
+		if buffer_exists(orig_file)
 			buffer_delete(orig_file)
 	}
 	return undefined;
 }
 
-function rpy_persistent_convert_from_abstract(obj) {
+function rpy_persistent_convert_from_abstract(obj, rem_internal_entries=false) {
 	var struct = {};
 	var keys = variable_struct_get_names(obj);
 	for (var i = 0; i < array_length(keys); i++) {
 		var key = keys[i]
 		var value = obj[$ key]
+		if rem_internal_entries && string_copy(key, 0, 1) == "_"
+			continue;
 		if string_copy(key, 0, 2) == "__" && string_copy(key, string_length(key) - 1, 2) == "__"
 			continue;
 		if is_struct(value) {
 			if variable_struct_exists(value, "__content__")
 				value = value.__content__
 			else
-				value = rpy_persistent_convert_from_abstract(value)
+				value = rpy_persistent_convert_from_abstract(value, false)
 		}
 		struct[$ key] = value
 	}
