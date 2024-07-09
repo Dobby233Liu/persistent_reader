@@ -704,8 +704,8 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 	inst_lut[global._pickle_opcodes.MEMOIZE] = function MEMOIZE () {
 		array_push(memo, array_last(stack))
 	};
-    run = function(inst) {
-        var inst_f
+    step = function() {
+        var inst = buffer_read(buf, buffer_u8), inst_f
         try {
 		    inst_f = inst_lut[inst]
         } catch (_) {
@@ -719,26 +719,30 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
 	var correctly_stopped = false;
     var interp = new _rpyp_pkl_interpreter(buf, find_class)
-    var bufsize = buffer_get_size(buf)
-	if bufsize <= 0
+	if buffer_get_size(buf) <= 0
 		throw "Buffer is empty";
 	try {
-		repeat (bufsize) {
-			interp.run(buffer_read(buf, buffer_u8))
+		while (true) {
+			interp.step()
 		}
 	} catch (_e) {
 		if _e == _RPYP_PKL_STOP_CODE {
 			correctly_stopped = true
-		} else if is_string(_e) {
-			_e += "\nBuffer read to position " + string(buffer_tell(buf))
-			throw _e
 		} else {
-			var le_stacktrace = "";
-			for (var i = 0; i < array_length(_e.stacktrace); i++)
-				le_stacktrace += _e.stacktrace[i] + "\n"
-			throw _e.message + "\nBuffer read to position " + string(buffer_tell(buf)) + "\n" + le_stacktrace
-		}
+            var poshint = "\nBuffer read to position " + string(buffer_tell(buf))
+            if is_string(_e) {
+    			_e += poshint
+    			throw _e
+    		} else {
+    			var le_stacktrace = "";
+    			for (var i = 0; i < array_length(_e.stacktrace); i++)
+    				le_stacktrace += _e.stacktrace[i] + "\n"
+    			throw _e.message + poshint + "\n" + le_stacktrace
+    		}
+        }
 	}
+    // Well I think the loop will just crash when we reach EOF anyway
+    // I'm not calling buffer_tell every iteration
 	if !correctly_stopped {
 		throw "EOF reached while reading buffer, however STOP is not called"
 	}
