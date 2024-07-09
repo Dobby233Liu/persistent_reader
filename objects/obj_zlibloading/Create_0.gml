@@ -1,5 +1,5 @@
-var pdataa = rpy_persistent_read("persistent_rival")
-pdata = rpy_persistent_convert_from_abstract(pdataa)
+var pdata = rpy_persistent_read_uncompressed("pickle_p0")
+pdata = rpy_persistent_convert_from_abstract(pdata)
 
 dump = json_stringify(pdata, true)
 var file = file_text_open_write("dump.json")

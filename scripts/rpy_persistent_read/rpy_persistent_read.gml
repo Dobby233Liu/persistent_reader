@@ -715,7 +715,7 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
     }
 }
 
-///@return {Any?}
+///@return {Any}?
 function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
 	var correctly_stopped = false;
     var interp = new _rpyp_pkl_interpreter(buf, find_class)
@@ -745,7 +745,7 @@ function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
 	return interp.value;
 }
 
-///@return {Any?}
+///@return {Any}?
 function rpy_persistent_read_buffer(cmp_buff, find_class=rpyp_pkl_get_class) {
 	var pickle_buff = undefined
 	try {
@@ -756,7 +756,7 @@ function rpy_persistent_read_buffer(cmp_buff, find_class=rpyp_pkl_get_class) {
 			buffer_delete(pickle_buff)
 	}
 }
-///@return {Any?}
+///@return {Any}?
 function rpy_persistent_read(fn, find_class=rpyp_pkl_get_class){
 	var orig_file = undefined;
 	try {
@@ -769,7 +769,7 @@ function rpy_persistent_read(fn, find_class=rpyp_pkl_get_class){
 			buffer_delete(orig_file)
 	}
 }
-///@return {Any?}
+///@return {Any}?
 function rpy_persistent_read_uncompressed(fn, find_class=rpyp_pkl_get_class){
 	var orig_file = undefined;
 	try {
@@ -784,22 +784,27 @@ function rpy_persistent_read_uncompressed(fn, find_class=rpyp_pkl_get_class){
 }
 
 function rpy_persistent_convert_from_abstract(obj, rem_internal_entries=false) {
+    if is_struct(obj) && variable_struct_exists(obj, "__content__") {
+    	obj = obj.__content__
+    }
+    if !is_struct(obj)
+        return obj;
 	var struct = {};
-	var keys = variable_struct_get_names(obj);
-	for (var i = 0; i < array_length(keys); i++) {
-		var key = keys[i]
-		var value = obj[$ key]
-		if rem_internal_entries && string_copy(key, 0, 1) == "_"
-			continue;
-		if string_copy(key, 0, 2) == "__" && string_copy(key, string_length(key) - 1, 2) == "__"
-			continue;
-		if is_struct(value) {
-			if variable_struct_exists(value, "__content__")
-				value = value.__content__
-			else
-				value = rpy_persistent_convert_from_abstract(value, false)
-		}
-		struct[$ key] = value
-	}
+    var keys = variable_struct_get_names(obj);
+    for (var i = 0; i < array_length(keys); i++) {
+    	var key = keys[i]
+    	var value = obj[$ key]
+    	if rem_internal_entries && string_copy(key, 0, 1) == "_"
+    		continue;
+    	if string_copy(key, 0, 2) == "__" && string_copy(key, string_length(key) - 1, 2) == "__"
+    		continue;
+    	if is_struct(value) {
+    		if variable_struct_exists(value, "__content__")
+    			value = value.__content__
+    		else
+    			value = rpy_persistent_convert_from_abstract(value, false)
+    	}
+    	struct[$ key] = value
+    }
 	return struct;
 }
