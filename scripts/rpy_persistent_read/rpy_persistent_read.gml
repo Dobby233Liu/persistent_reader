@@ -391,7 +391,6 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 	memo = []
 	stack = []
 	metastack = []
-    ///@type {Any?}
     value = undefined
 	static inst_lut = []
 	inst_lut[global._pickle_opcodes.PROTO] = function PROTO () {
