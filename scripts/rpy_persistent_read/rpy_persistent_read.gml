@@ -705,11 +705,13 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 		array_push(memo, array_last(stack))
 	};
     run = function(inst) {
-		var inst_f = inst_lut[inst]
-        if inst_f != undefined
-            inst_f()
-        else
+        var inst_f
+        try {
+		    inst_f = inst_lut[inst]
+        } catch (_) {
 			throw "Unknown opcode " + chr(inst);
+        }
+        inst_f()
     }
 }
 
