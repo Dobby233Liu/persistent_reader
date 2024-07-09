@@ -113,50 +113,24 @@ global._pickle_opcodes = {
 #macro _RPYP_PKL_POP_MARK array_pop(metastack)
 #macro _RPYP_PKL_STOP_CODE 0xffffffff
 
-// From https://forum.yoyogames.com/index.php?threads/endianness-aware-built-in-functions.94360/
-function rpyp_pkl_is_native_little_endian() {
-	static memoized_value = (function() {
-		var buffer = buffer_create(2, buffer_fixed, 1);
-		try {
-			buffer_write(buffer, buffer_u16, 0x0005);
-
-			var first_byte = buffer_peek(buffer, 0, buffer_u8);
-			return first_byte == 0x05;
-		} finally {
-			buffer_delete(buffer);
-		}
-	})();
-	return memoized_value;
-}
-// Based on https://forum.yoyogames.com/index.php?threads/reverse-a-string.33407/post-206775
-// FIXME: this still outputs bad results
-function rpyp_pkl_read_bef64(buf, movecursor = true) {
-	var fend, n = 8;
-	if rpyp_pkl_is_native_little_endian() {
-		var b1 = undefined, b2 = undefined;
-		try {
-			b1 = buffer_create(n + 1, buffer_fixed, 2);
-			b2 = buffer_create(n + 1, buffer_fixed, 2);
-			buffer_copy(buf, buffer_tell(buf), n + 1, b1, 0)
-			var i = n;
-			while (buffer_tell(b1) < n) {
-				var c = buffer_read(b1, buffer_u8);
-				buffer_poke(b2, --i, buffer_u8, c);
-			}
-			buffer_seek(b2, buffer_seek_start, 0);
-			fend = buffer_read(b2, buffer_f64);
-		} finally {
-			if buffer_exists(b1)
-				buffer_delete(b1)
-			if buffer_exists(b2)
-				buffer_delete(b2)
-		}
-	} else {
-		fend = buffer_peek(buf, buffer_tell(buf), buffer_f64)
-	}
-	if movecursor
-		buffer_seek(buf, buffer_seek_relative, n);
-	return fend;
+// Based on https://meseta.itch.io/gm-msgpack
+function rpyp_pkl_read_double_be(buf) {
+    var fend;
+    var scratch = buffer_create(8, buffer_fixed, 1);
+    try {
+        buffer_poke(scratch, 7, buffer_u8, buffer_read(buf, buffer_u8));
+        buffer_poke(scratch, 6, buffer_u8, buffer_read(buf, buffer_u8));
+        buffer_poke(scratch, 5, buffer_u8, buffer_read(buf, buffer_u8));
+        buffer_poke(scratch, 4, buffer_u8, buffer_read(buf, buffer_u8));
+        buffer_poke(scratch, 3, buffer_u8, buffer_read(buf, buffer_u8));
+        buffer_poke(scratch, 2, buffer_u8, buffer_read(buf, buffer_u8));
+        buffer_poke(scratch, 1, buffer_u8, buffer_read(buf, buffer_u8));
+        buffer_poke(scratch, 0, buffer_u8, buffer_read(buf, buffer_u8));
+        fend = buffer_read(scratch, buffer_f64);
+    } finally {
+        buffer_delete(scratch);
+    }
+    return fend;
 }
 
 // escaped strings parsing is currently not supported
@@ -242,9 +216,6 @@ function _rpyp_pkl__builtin_tuple() : _rpyp_pkl__builtin_object() constructor {
 	__init__ = function(args) {
 		array_copy(__content__, 0, args, 0, array_length(args))
 	}
-	static __get_content__ = function () {
-		return __content__
-	}
 	static __len__ = function () {
 		return array_length(__content__)
 	}
@@ -318,9 +289,6 @@ function _rpyp_pkl__builtin_dict() : _rpyp_pkl__builtin_object() constructor {
 		if argument_count > 0 {
 			throw "Unimplemented";
 		}
-	}
-	static __get_content__ = function () {
-		return __content__
 	}
 	static __getitem__ = function (key) {
 		return __content__[$ key];
@@ -545,7 +513,8 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 		var contents = stack
 		stack = _RPYP_PKL_POP_MARK;
 		var dict = array_last(stack)
-		for (var i = 0; i < array_length(contents); i += 2)
+        var contentsl = array_length(contents)
+		for (var i = 0; i < contentsl; i += 2)
 			dict.__content__[$ contents[i]] = contents[i + 1]
 	};
 	inst_lut[global._pickle_opcodes.ADDITEMS] = function ADDITEMS () {
@@ -589,7 +558,7 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 		array_push(stack, memo[index])
 	};
 	inst_lut[global._pickle_opcodes.BINFLOAT] = function BINFLOAT () {
-		array_push(stack, rpyp_pkl_read_bef64(buf))
+		array_push(stack, rpyp_pkl_read_double_be(buf))
 	};
 	inst_lut[global._pickle_opcodes.STOP] = function STOP () {
 		value = array_pop(stack);
