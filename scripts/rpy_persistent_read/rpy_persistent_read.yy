@@ -1,12 +1,13 @@
 {
-  "isDnD": false,
-  "isCompatibility": false,
-  "parent": {
-    "name": "脚本",
-    "path": "folders/脚本.yy",
+  "$GMScript":"v1",
+  "%Name":"rpy_persistent_read",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"rpy_persistent_read",
+  "parent":{
+    "name":"脚本",
+    "path":"folders/脚本.yy",
   },
-  "resourceVersion": "1.0",
-  "name": "rpy_persistent_read",
-  "tags": [],
-  "resourceType": "GMScript",
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
 }

@@ -31,84 +31,86 @@
 // Copied from cPickle
 // Stripped to Protocol 2, includes subset of opcodes from later protocols
 global._pickle_opcodes = {
-	MARK            : "(",
-	STOP            : ".",
-	POP             : "0",
-	POP_MARK        : "1",
-	DUP             : "2",
-	FLOAT           : "F",
-	INT             : "I",
-	BININT          : "J",
-	BININT1         : "K",
-	LONG            : "L",
-	BININT2         : "M",
-	NONE            : "N",
-	PERSID          : "P",
-	BINPERSID       : "Q",
-	REDUCE          : "R",
-	STRING          : "S",
-	BINSTRING       : "T",
-	SHORT_BINSTRING : "U",
-	UNICODE         : "V",
-	BINUNICODE      : "X",
-	APPEND          : "a",
-	BUILD           : "b",
-	GLOBAL          : "c",
-	DICT            : "d",
-	EMPTY_DICT      : "}",
-	APPENDS         : "e",
-	GET             : "g",
-	BINGET          : "h",
-	INST            : "i",
-	LONG_BINGET     : "j",
-	LIST            : "l",
-	EMPTY_LIST      : "]",
-	OBJ             : "o",
-	PUT             : "p",
-	BINPUT          : "q",
-	LONG_BINPUT     : "r",
-	SETITEM         : "s",
-	TUPLE           : "t",
-	EMPTY_TUPLE     : ")",
-	SETITEMS        : "u",
-	BINFLOAT        : "G",
+	MARK            : ord("("),
+	STOP            : ord("."),
+	POP             : ord("0"),
+	POP_MARK        : ord("1"),
+	DUP             : ord("2"),
+	FLOAT           : ord("F"),
+	INT             : ord("I"),
+	BININT          : ord("J"),
+	BININT1         : ord("K"),
+	LONG            : ord("L"),
+	BININT2         : ord("M"),
+	NONE            : ord("N"),
+	PERSID          : ord("P"),
+	BINPERSID       : ord("Q"),
+	REDUCE          : ord("R"),
+	STRING          : ord("S"),
+	BINSTRING       : ord("T"),
+	SHORT_BINSTRING : ord("U"),
+	UNICODE         : ord("V"),
+	BINUNICODE      : ord("X"),
+	APPEND          : ord("a"),
+	BUILD           : ord("b"),
+	GLOBAL          : ord("c"),
+	DICT            : ord("d"),
+	EMPTY_DICT      : ord("}"),
+	APPENDS         : ord("e"),
+	GET             : ord("g"),
+	BINGET          : ord("h"),
+	INST            : ord("i"),
+	LONG_BINGET     : ord("j"),
+	LIST            : ord("l"),
+	EMPTY_LIST      : ord("]"),
+	OBJ             : ord("o"),
+	PUT             : ord("p"),
+	BINPUT          : ord("q"),
+	LONG_BINPUT     : ord("r"),
+	SETITEM         : ord("s"),
+	TUPLE           : ord("t"),
+	EMPTY_TUPLE     : ord(")"),
+	SETITEMS        : ord("u"),
+	BINFLOAT        : ord("G"),
 
 	// Protocol 2
-	PROTO       : "\x80",
-	NEWOBJ      : "\x81",
-	EXT1        : "\x82",
-	EXT2        : "\x83",
-	EXT4        : "\x84",
-	TUPLE1      : "\x85",
-	TUPLE2      : "\x86",
-	TUPLE3      : "\x87",
-	NEWTRUE     : "\x88",
-	NEWFALSE    : "\x89",
-	LONG1       : "\x8a",
-	LONG4       : "\x8b",
+	PROTO       : ord("\x80"),
+	NEWOBJ      : ord("\x81"),
+	EXT1        : ord("\x82"),
+	EXT2        : ord("\x83"),
+	EXT4        : ord("\x84"),
+	TUPLE1      : ord("\x85"),
+	TUPLE2      : ord("\x86"),
+	TUPLE3      : ord("\x87"),
+	NEWTRUE     : ord("\x88"),
+	NEWFALSE    : ord("\x89"),
+	LONG1       : ord("\x8a"),
+	LONG4       : ord("\x8b"),
 
 	// Protocol 3
-	BINBYTES       : "B",
-	SHORT_BINBYTES : "C",
+	BINBYTES       : ord("B"),
+	SHORT_BINBYTES : ord("C"),
 
 	// Protocol 4
 	// 8-bytes not supported by GM rn
-	SHORT_BINUNICODE : "\x8c",
-	BINUNICODE8      : "\x8d",
-	BINBYTES8        : "\x8e",
-	EMPTY_SET        : "\x8f",
-	ADDITEMS         : "\x90",
-	FROZENSET        : "\x91",
-	NEWOBJ_EX        : "\x92",
-	STACK_GLOBAL     : "\x93",
-	MEMOIZE          : "\x94",
-	FRAME            : "\x95",
+	SHORT_BINUNICODE : ord("\x8c"),
+	BINUNICODE8      : ord("\x8d"),
+	BINBYTES8        : ord("\x8e"),
+	EMPTY_SET        : ord("\x8f"),
+	ADDITEMS         : ord("\x90"),
+	FROZENSET        : ord("\x91"),
+	NEWOBJ_EX        : ord("\x92"),
+	STACK_GLOBAL     : ord("\x93"),
+	MEMOIZE          : ord("\x94"),
+	FRAME            : ord("\x95"),
 
 	// Protocol 5
-	BYTEARRAY8       : "\x96",
-	NEXT_BUFFER      : "\x97",
-	READONLY_BUFFER  : "\x98",
+	BYTEARRAY8       : ord("\x96"),
+	NEXT_BUFFER      : ord("\x97"),
+	READONLY_BUFFER  : ord("\x98"),
 }
+
+#macro _RPYP_PKL_POP_MARK array_pop(metastack)
 
 // From https://forum.yoyogames.com/index.php?threads/endianness-aware-built-in-functions.94360/
 function rpyp_pkl_is_native_little_endian() {
@@ -162,9 +164,9 @@ function rpyp_pkl_read_binstring(buf, startpoint, len, movecursor = true, escape
 		return ""
 	else if buffer_get_size(buf) < (startpoint + len)
 		throw "String length out of bounds";
-	var _buf = buffer_create(len, buffer_fixed, 2)
+	var _buf = buffer_create(len, buffer_fixed, 1)
 	buffer_copy(buf, startpoint, len, _buf, 0)
-	str = buffer_read(_buf, buffer_text)
+	var str = buffer_read(_buf, buffer_text)
 	buffer_delete(_buf)
 	if movecursor
 		buffer_seek(buf, buffer_seek_start, startpoint + len)
@@ -185,6 +187,9 @@ function rpyp_pkl_read_line(buf, escape = false) {
 	return rpyp_pkl_read_binstring(buf, startpoint, endpoint - startpoint, false, escape);
 }
 
+/**
+* @returns {Real|Bool}
+*/
 function rpyp_pkl_from_decl(str, short = false) {
 	if string_length(str) <= 0
 		throw "Decimal long string too short"
@@ -200,32 +205,29 @@ function rpyp_pkl_from_decl(str, short = false) {
 	return round(real(str))
 }
 
-#macro _RPYP_PKL_COPY_ARGS  var args = []; \
-	for (var i = 0; i < argument_count; i++) \
-		array_push(args, argument[i]);
-
 function _rpyp_pkl__builtin_object() constructor {
 	__module__ = "__builtin__"
 	__name__ = "object"
 	__bases__ = []
-	static __new__ = function () {
-		_RPYP_PKL_COPY_ARGS;
-		script_execute_ext(method_get_index(__init__), args);
+    __pass_raw_args__ = false
+    __init__ = function (_, __) {}
+    static __empty_kwargs__ = {}
+	__new__ = function (args, kwargs=__empty_kwargs__ /* fixme */) {
+        if (__pass_raw_args__)
+            __init__(args, kwargs)
+        else
+		    script_execute_ext(__init__, args);
 		return self;
 	}
-	static __init__ = function () {}
 	static toString = function() {
 		return __module__ + "." + __name__
 	}
-	static __setstate_special_a__ = function (state) {
+	__setstate__ = function (state) {
 		var keys = variable_struct_get_names(state);
 		for (var i = 0; i < array_length(keys); i++) {
 		    self[$ keys[i]] = state[$ keys[i]]
 		}
 		return self;
-	}
-	static __setstate__ = function (state) {
-		return __setstate_special_a__(state);
 	}
 };
 function _rpyp_pkl__builtin_tuple() : _rpyp_pkl__builtin_object() constructor {
@@ -235,9 +237,9 @@ function _rpyp_pkl__builtin_tuple() : _rpyp_pkl__builtin_object() constructor {
 	__content__ = []
 	__brackets_l__ = "("
 	__brackets_r__ = ")"
-	static __init__ = function() {
-		for (var i = 0; i < argument_count; i++)
-			__setitem__(i, argument[i]);
+    __pass_raw_args__ = true
+	__init__ = function(args) {
+		array_copy(__content__, 0, args, 0, array_length(args))
 	}
 	static __get_content__ = function () {
 		return __content__
@@ -252,16 +254,11 @@ function _rpyp_pkl__builtin_tuple() : _rpyp_pkl__builtin_object() constructor {
 		__content__[key] = value;
 	}
 	static __delitem__ = function (key) {
-		__content__[key] = undefined;
+		delete __content__[key];
 	}
 	__setstate__ = undefined
 	static toString = function () {
-		var str = __brackets_l__ + " ";
-		var inside_str = ""
-		for (var i = 0; i < array_length(__content__); i++)
-			inside_str += string(__content__[i]) + (i == (array_length(__content__) - 1) ? "" : ", ")
-		str += inside_str + " " + __brackets_r__
-		return str;
+		return __brackets_l__ + string_trim(string(__content__), ["[", "]"]) + __brackets_r__;
 	}
 };
 // bruh
@@ -275,8 +272,7 @@ function _rpyp_pkl__builtin_set() : _rpyp_pkl__builtin_tuple() constructor {
 		array_push(__content__, value)
 	}
 	__setstate__ = function (state) {
-		for (var i = 0; i < array_length(state); i++)
-			array_push(__content__, state[i])
+        __content__ = array_concat(__content__, state)
 	}
 };
 function _rpyp_pkl__builtin_frozenset() : _rpyp_pkl__builtin_set() constructor {
@@ -305,8 +301,7 @@ function _rpyp_pkl__builtin_list() : _rpyp_pkl__builtin_tuple() constructor {
 	__brackets_l__ = "["
 	__brackets_r__ = "]"
 	static extend = function (arr) {
-		for (var i = 0; i < array_length(arr); i++)
-			array_push(__content__, arr[i])
+		__content__ = array_concat(__content__, arr)
 		return self;
 	}
 };
@@ -318,7 +313,7 @@ function _rpyp_pkl__builtin_dict() : _rpyp_pkl__builtin_object() constructor {
 	__brackets_l__ = "{"
 	__brackets_r__ = "}"
 	__dict__ = self
-	static __init__ = function() {
+	__init__ = function() {
 		if argument_count > 0 {
 			throw "Unimplemented";
 		}
@@ -373,110 +368,53 @@ function _rpyp_pkl_renpy_python_RevertableSet() : _rpyp_pkl__builtin_tuple() con
 		array_push(__content__, value)
 	}
 	__setstate__ = function (state) {
-		for (var i = 0; i < array_length(state); i++)
-			array_push(__content__, state[i])
+        __content__ = array_concat(__content__, state)
 	}
 };
 
 function rpyp_pkl_get_class(class, name) {
-	switch (class + "." + name) {
-		case "__builtin__.object":
-			return _rpyp_pkl__builtin_object;
-			break;
-		case "__builtin__.tuple":
-			return _rpyp_pkl__builtin_tuple;
-			break;
-		case "__builtin__.dict":
-			return _rpyp_pkl__builtin_dict;
-			break;
-		case "__builtin__.set":
-			return _rpyp_pkl__builtin_set;
-			break;
-		case "__builtin__.frozenset":
-			return _rpyp_pkl__builtin_frozenset;
-			break;
-		case "__builtin__.list":
-			return _rpyp_pkl__builtin_list;
-			break;
-		case "renpy.persistent.Persistent":
-			return _rpyp_pkl_renpy_persistent_Persistent;
-			break;
-		case "renpy.python.RevertableDict":
-			return _rpyp_pkl_renpy_python_RevertableDict;
-			break;
-		case "renpy.python.RevertableList":
-			return _rpyp_pkl_renpy_python_RevertableList;
-			break;
-		case "renpy.python.RevertableSet":
-			return _rpyp_pkl_renpy_python_RevertableSet;
-			break;
-		case "renpy.preferences.Preferences":
-			return _rpyp_pkl_renpy_preferences_Preferences;
-			break;
-		default:
-			throw "Unknown class " + class + "." + name;
-			break;
-	}
-	return undefined;
+    static class_lut = {
+    	"__builtin__.object" : _rpyp_pkl__builtin_object,
+    	"__builtin__.tuple" : _rpyp_pkl__builtin_tuple,
+    	"__builtin__.dict" : _rpyp_pkl__builtin_dict,
+    	"__builtin__.set" : _rpyp_pkl__builtin_set,
+    	"__builtin__.frozenset" : _rpyp_pkl__builtin_frozenset,
+    	"__builtin__.list" : _rpyp_pkl__builtin_list,
+    	"renpy.persistent.Persistent" : _rpyp_pkl_renpy_persistent_Persistent,
+    	"renpy.python.RevertableDict" : _rpyp_pkl_renpy_python_RevertableDict,
+    	"renpy.python.RevertableList" : _rpyp_pkl_renpy_python_RevertableList,
+    	"renpy.python.RevertableSet" : _rpyp_pkl_renpy_python_RevertableSet,
+    	"renpy.preferences.Preferences" : _rpyp_pkl_renpy_preferences_Preferences
+    }
+
+    var class_namex = class + "." + name;
+    var class_ctor = class_lut[$ class_namex]
+    if (class_ctor == undefined)
+    	throw "Unknown class " + class_namex;
+    return class_ctor;
 }
 
-/*function rpyp_pkl_fakeclass_callnew(class, args) {
-	return script_execute_ext(method_get_index(class.__new__), args);
-}*/
-function rpyp_pkl_fakeclass_callnew_self(args) {
-	return script_execute_ext(method_get_index(__new__), args);
-}
-function rpyp_pkl_fakeclass_new(class, args) {
-	if is_numeric(class)
-		class = method(self, class)
-	var obj = new class();
-	return method(obj, rpyp_pkl_fakeclass_callnew_self)(args);
-}
 function rpyp_pkl_fakeclass_isinstance(inst, module, name) {
-	return variable_struct_exists(inst, "__module__") && inst.__module__ == module && inst.__name__ == name
+	return is_struct(inst) && inst.__module__ == module && inst.__name__ == name
 }
-
-function rpyp_pkl_pop_mark(metastack) {
-	var res = metastack[array_length(metastack) - 1]
-	array_pop(metastack)
-	return res
-}
-
-/*function rpyp_pkl_to_array(dict) {
-	var keys = variable_struct_get_names(dict).__content__;
-	var arr = [];
-	for (var i = 0; i < array_length(keys); i++) {
-		array_push(arr, dict[$ keys[i]])
-	}
-	return arr
-}*/
 
 function rpyp_pkl_callfunc(callable, args) {
-	if is_method(callable) || (is_numeric(callable) && is_method(method(self, callable))) {
-		var args_real = args
+	if is_method(callable) {
 		if is_struct(args) {
-			if !variable_struct_exists(args, "__content__") || !is_array(args.__content__)
+			if !variable_struct_exists(args, "__content__")
 				throw "Class is not an array-like fake Python class"
-			args_real = args.__content__
-		} else if !is_array(args) {
+			args = args.__content__
+		}
+        if !is_array(args) {
 			throw "args argument is not an array"
 		}
-		var callable_real = callable
-		if is_method(callable_real)
-			callable_real = method_get_index(callable_real)
-		return script_execute_ext(callable_real, args_real)
-	} else if is_struct(callable) {
-		if !variable_struct_exists(callable, "__name__")
-			throw "Not an fake Python class"
-		return rpyp_pkl_fakeclass_new(callable, args)
+		return script_execute_ext(callable, args)
 	} else {
 		throw "Object is not callable"
 	}
 }
 
 function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
-	// prevent strange stuff from happening
-	gc_enable(false);
 	var pkl_version = 0;
 	var memo = []
 	var stack = []
@@ -488,8 +426,7 @@ function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
 	try {
 		while (buffer_get_size(buf) > buffer_tell(buf)) {
 			var inst = buffer_read(buf, buffer_u8)
-			var inst_str = chr(inst)
-			switch inst_str {
+			switch inst {
 				case global._pickle_opcodes.PROTO:
 					pkl_version = buffer_read(buf, buffer_u8)
 					if (pkl_version > 2)
@@ -502,33 +439,29 @@ function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
 					array_push(stack, class)
 					break;
 				case global._pickle_opcodes.STACK_GLOBAL:
-					var origin = stack[array_length(stack) - 2]
-					var class = stack[array_length(stack) - 1]
-					array_pop(stack)
-					array_pop(stack)
+					var class = array_pop(stack)
+					var origin = array_pop(stack)
 					array_push(stack, find_class(origin, class))
 					break;
 				case global._pickle_opcodes.BINPUT:
 					var loc = buffer_read(buf, buffer_u8)
 					if (loc < 0)
 						throw "Negative BINPUT argument";
-					array_set(memo, loc, stack[array_length(stack) - 1])
+					memo[loc] = array_last(stack)
 					break;
 				case global._pickle_opcodes.EMPTY_TUPLE:
-					array_push(stack, rpyp_pkl_fakeclass_new(find_class("__builtin__", "tuple"), []))
+					array_push(stack, new _rpyp_pkl__builtin_tuple().__new__([]))
 					break;
 				case global._pickle_opcodes.NEWOBJ:
-					var cls = stack[array_length(stack) - 2]
-					var args = stack[array_length(stack) - 1].__content__
-					array_pop(stack)
-					array_pop(stack)
-					array_push(stack, rpyp_pkl_fakeclass_new(cls, args))
+					var args = array_pop(stack).__content__
+					var cls = array_pop(stack)
+					array_push(stack, new cls().__new__(args))
 					break;
 				case global._pickle_opcodes.EMPTY_DICT:
-					array_push(stack, rpyp_pkl_fakeclass_new(find_class("__builtin__", "dict"), []))
+					array_push(stack, new _rpyp_pkl__builtin_dict().__new__([]))
 					break;
 				case global._pickle_opcodes.EMPTY_SET:
-					array_push(stack, rpyp_pkl_fakeclass_new(find_class("__builtin__", "set"), []))
+					array_push(stack, new _rpyp_pkl__builtin_set().__new__([]))
 					break;
 				case global._pickle_opcodes.MARK:
 					array_push(metastack, stack)
@@ -548,7 +481,7 @@ function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
 					array_push(stack, buffer_read(buf, buffer_u8))
 					break;
 				case global._pickle_opcodes.EMPTY_LIST:
-					array_push(stack, rpyp_pkl_fakeclass_new(find_class("__builtin__", "list"), []))
+					array_push(stack, new _rpyp_pkl__builtin_list().__new__([]))
 					break;
 				case global._pickle_opcodes.BINUNICODE:
 					var len = buffer_read(buf, buffer_u32);
@@ -564,23 +497,22 @@ function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
 					var loc = buffer_read(buf, buffer_u32)
 					if (loc < 0)
 						throw "Negative LONG_BINPUT argument";
-					array_set(memo, loc, stack[array_length(stack) - 1])
+					memo[loc] = array_last(stack)
 					break;
 				case global._pickle_opcodes.APPENDS:
 					var contents = stack
-					stack = rpyp_pkl_pop_mark(metastack);
-					stack[array_length(stack) - 1].extend(contents);
+					stack = _RPYP_PKL_POP_MARK;
+					var list = array_last(stack);
+                    list.__content__ = array_concat(list.__content__, contents);
 					break;
 				case global._pickle_opcodes.TUPLE1:
-					var obj = rpyp_pkl_fakeclass_new(find_class("__builtin__", "tuple"), [stack[array_length(stack) - 1]]);
-					array_pop(stack)
+					var obj = new _rpyp_pkl__builtin_tuple().__new__([array_pop(stack)]);
 					array_push(stack, obj)
 					break;
 				case global._pickle_opcodes.REDUCE:
-					var args = stack[array_length(stack) - 1];
-					array_pop(stack)
-					var callable = stack[array_length(stack) - 1];
-					stack[array_length(stack) - 1] = rpyp_pkl_callfunc(callable, args)
+					var args = array_pop(stack);
+					var callable = array_pop(stack);
+					array_push(stack, rpyp_pkl_callfunc(callable, args))
 					break;
 				case global._pickle_opcodes.NEWTRUE:
 					array_push(stack, true)
@@ -595,16 +527,18 @@ function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
 					array_push(stack, buffer_read(buf, buffer_u16))
 					break;
 				case global._pickle_opcodes.TUPLE2:
-					var obj = rpyp_pkl_fakeclass_new(find_class("__builtin__", "tuple"), [stack[array_length(stack) - 1], stack[array_length(stack) - 2]]);
-					array_pop(stack)
-					array_pop(stack)
+                    var tcontents = []
+					tcontents[1] = array_pop(stack)
+					tcontents[0] = array_pop(stack)
+					var obj = new _rpyp_pkl__builtin_tuple().__new__(tcontents);
 					array_push(stack, obj)
 					break;
 				case global._pickle_opcodes.TUPLE3:
-					var obj = rpyp_pkl_fakeclass_new(find_class("__builtin__", "tuple"), [stack[array_length(stack) - 1], stack[array_length(stack) - 2], stack[array_length(stack) - 3]]);
-					array_pop(stack)
-					array_pop(stack)
-					array_pop(stack)
+                    var tcontents = []
+					tcontents[2] = array_pop(stack)
+					tcontents[1] = array_pop(stack)
+					tcontents[0] = array_pop(stack)
+					var obj = new _rpyp_pkl__builtin_tuple().__new__(tcontents);
 					array_push(stack, obj)
 					break;
 				case global._pickle_opcodes.LONG_BINGET:
@@ -613,31 +547,28 @@ function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
 					break;
 				case global._pickle_opcodes.SETITEMS:
 					var contents = stack
-					stack = rpyp_pkl_pop_mark(metastack);
-					var dict = stack[array_length(stack) - 1]
+					stack = _RPYP_PKL_POP_MARK;
+					var dict = array_last(stack)
 					for (var i = 0; i < array_length(contents); i += 2)
-						dict.__setitem__(contents[i], contents[i + 1])
+						dict.__content__[$ contents[i]] = contents[i + 1]
 					break;
 				case global._pickle_opcodes.ADDITEMS:
 					var contents = stack
-					stack = rpyp_pkl_pop_mark(metastack);
-					var set = stack[array_length(stack) - 1]
-					set.__contents__ = contents
+					stack = _RPYP_PKL_POP_MARK;
+					array_last(stack).__content__ = contents
 					break;
 				case global._pickle_opcodes.NONE:
 					array_push(stack, undefined);
 					break;
 				case global._pickle_opcodes.BUILD:
-					var state = stack[array_length(stack) - 1];
-					array_pop(stack)
-					var obj = stack[array_length(stack) - 1];
-					if variable_struct_exists(obj, "__setstate__") && obj.__setstate__ != undefined {
+					var state = array_pop(stack);
+					var obj = array_last(stack);
+					if obj.__setstate__ != undefined {
 						stack[array_length(stack) - 1] = obj.__setstate__(state.__content__)
-					} else if variable_struct_exists(obj, "__setstate_special_a__") && obj.__setstate_special_a__ != undefined {
-						stack[array_length(stack) - 1] = obj.__setstate_special_a__(state.__content__)
 					} else {
+                        // FIXME: what
 						var slotstate = undefined;
-						if is_struct(state) && rpyp_pkl_fakeclass_isinstance(state, "__builtin__", "tuple") && state.__len__() == 2 {
+						if rpyp_pkl_fakeclass_isinstance(state, "__builtin__", "tuple") && state.__len__() == 2 {
 							slotstate = state.__content__[1]
 							state = state.__content__[0]
 						}
@@ -645,18 +576,14 @@ function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
 							var rstate = state.__content__
 							var sitems = variable_struct_get_names(rstate)
 							for (var i = 0; i < array_length(sitems); i++) {
-								var k = sitems[i]
-								var v = rstate[$ k]
-								obj.__dict__.__setitem__(k, v)
+								obj.__dict__.__content__[$ sitems[i]] = rstate[$ sitems[i]]
 							}
 						}
 						if slotstate != undefined {
 							var rslotstate = slotstate.__content__
 							var ssitems = variable_struct_get_names(rslotstate)
 							for (var i = 0; i < array_length(ssitems); i++) {
-								var k = ssitems[i]
-								var v = rslotstate[$ k]
-								obj[$ k] = v
+								obj[$ ssitems[i]] = rslotstate[$ ssitems[i]]
 							}
 						}
 					}
@@ -669,8 +596,7 @@ function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
 					array_push(stack, rpyp_pkl_read_bef64(buf))
 					break;
 				case global._pickle_opcodes.STOP:
-					var value = stack[array_length(stack) - 1];
-					array_pop(stack)
+					var value = array_pop(stack);
 					throw "STOP"
 					break;
 				case global._pickle_opcodes.EXT1:
@@ -684,16 +610,14 @@ function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
 					throw "Long numbers are currently not supported. Corrupt persistent file?"
 					break;
 				case global._pickle_opcodes.POP:
-					if array_length(stack) > 0
-						array_pop(stack)
-					else
-						stack = rpyp_pkl_pop_mark(metastack)
+					if array_pop(stack) == undefined
+						stack = _RPYP_PKL_POP_MARK
 					break;
 				case global._pickle_opcodes.POP_MARK:
-					stack = rpyp_pkl_pop_mark(metastack)
+					stack = _RPYP_PKL_POP_MARK
 					break;
 				case global._pickle_opcodes.DUP:
-					array_push(stack, stack[array_length(stack) - 1])
+					array_push(stack, array_last(stack))
 					break;
 				case global._pickle_opcodes.FLOAT:
 				case global._pickle_opcodes.INT:
@@ -710,16 +634,15 @@ function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
 					array_push(stack, string_copy(value, 2, string_length(value) - 2))
 					break;
 				case global._pickle_opcodes.APPEND:
-					var value = stack[array_length(stack) - 1]
-					array_pop(stack)
-					array_push(stack[array_length(stack) - 1], value)
+					var value = array_pop(stack)
+					array_push(array_last(stack), value)
 					break;
 				case global._pickle_opcodes.DICT:
 				    var items = stack
-					stack = rpyp_pkl_pop_mark(metastack)
-			        var dict = rpyp_pkl_fakeclass_new(find_class("__builtin__", "dict"), [])
+					stack = _RPYP_PKL_POP_MARK
+			        var dict = new _rpyp_pkl__builtin_dict().__new__([])
 					for (var i = 0; i < array_length(items); i += 2)
-						dict.__setitem__(items[i], items[i + 1])
+						dict.__content__[$ items[i]] = items[i + 1]
 			        array_push(stack, dict)
 					break;
 				case global._pickle_opcodes.GET:
@@ -731,38 +654,36 @@ function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
 					var class = rpyp_pkl_read_line(buf)
 					var class_obj = find_class(origin, class)
 					var orig_stack = stack
-					stack = rpyp_pkl_pop_mark(metastack)
-					array_push(stack, rpyp_pkl_fakeclass_new(class_obj, orig_stack))
+					stack = _RPYP_PKL_POP_MARK
+					array_push(stack, new class_obj().__new__(orig_stack))
 					break;
 				case global._pickle_opcodes.OBJ:
 					var args = stack
-					stack = rpyp_pkl_pop_mark(metastack)
+					stack = _RPYP_PKL_POP_MARK
 					var class_obj = stack[0]
 					array_delete(stack, 0, 1)
-					array_push(stack, rpyp_pkl_fakeclass_new(class_obj, args))
+					array_push(stack, new class_obj().__new__(args))
 					break;
 				case global._pickle_opcodes.LIST:
 				    var items = stack
-					stack = rpyp_pkl_pop_mark(metastack)
-			        var list = rpyp_pkl_fakeclass_new(find_class("__builtin__", "list"), items)
+					stack = _RPYP_PKL_POP_MARK
+			        var list = new _rpyp_pkl__builtin_list().__new__(items)
 			        array_push(stack, list)
 					break;
 				case global._pickle_opcodes.PUT:
 					var loc = rpyp_pkl_from_decl(rpyp_pkl_read_line(buf))
-					array_set(memo, loc, stack[array_length(stack) - 1])
+					memo[loc] = array_last(stack)
 					break;
 				case global._pickle_opcodes.SETITEM:
-					var value = stack[array_length(stack) - 1]
-					array_pop(stack)
-					var key = stack[array_length(stack) - 1]
-					array_pop(stack)
-					var dict = stack[array_length(stack) - 1]
-					dict.__setitem__(key, value)
+					var value = array_pop(stack)
+					var key = array_pop(stack)
+					var dict = array_last(stack)
+					dict.__content__[$ key] = value
 					break;
 				case global._pickle_opcodes.TUPLE:
 				    var items = stack
-					stack = rpyp_pkl_pop_mark(metastack)
-			        var list = rpyp_pkl_fakeclass_new(find_class("__builtin__", "tuple"), items)
+					stack = _RPYP_PKL_POP_MARK
+			        var list = new _rpyp_pkl__builtin_tuple().__new__(items)
 			        array_push(stack, list)
 					break;
 				case global._pickle_opcodes.BINUNICODE8:
@@ -783,22 +704,19 @@ function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
 					break;
 				case global._pickle_opcodes.FROZENSET:
 				    var items = stack
-					stack = rpyp_pkl_pop_mark(metastack)
-			        var set = rpyp_pkl_fakeclass_new(find_class("__builtin__", "frozenset"), [])
-					set.__contents__ = items
+					stack = _RPYP_PKL_POP_MARK
+			        var set = new _rpyp_pkl__builtin_frozenset().__new__([])
+					set.__content__ = items
 			        array_push(stack, set)
 					break;
 				case global._pickle_opcodes.NEWOBJ_EX:
-					/* var cls = stack[array_length(stack) - 1]
-					var args = stack[array_length(stack) - 2].__get_content__()
-					var kwargs = rpyp_pkl_to_array(stack[array_length(stack) - 3].__get_content__())
-					for (var i = 0; i < array_length(kwargs); i++)
-						array_push(args, kwargs[i])
-					array_pop(stack)
-					array_pop(stack)
-					array_pop(stack)
-					array_push(stack, rpyp_pkl_fakeclass_callnew(cls, args)) */
-					throw "Keyword arguments are currently not supported. Corrupt persistent file?"
+					/*
+                    var kwargs = array_pop(stack).__content__
+                    var args = array_pop(stack).__content__
+                    var cls = array_pop(stack)
+
+					array_push(stack, new cls().__new__(args, kwargs)) */
+					throw "Keyword arguments are not supported."
 					break;
 				case global._pickle_opcodes.FRAME:
 					throw "Framing is not supported."
@@ -808,7 +726,7 @@ function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
 					throw "Out-of-band buffers are not supported."
 					break;
 				case global._pickle_opcodes.MEMOIZE:
-					array_push(memo, stack[array_length(stack) - 1])
+					array_push(memo, array_last(stack))
 					break;
 				default:
 					throw "Unknown opcode " + string(inst);
@@ -816,21 +734,17 @@ function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
 			}
 		}
 	} catch (_e) {
-		if is_string(_e) {
-			if _e == "STOP" {
-				correctly_stopped = true
-			} else {
-				_e += "\nBuffer read to position " + string(buffer_tell(buf))
-				throw _e
-			}
+		if _e == "STOP" {
+			correctly_stopped = true
+		} else if is_string(_e) {
+			_e += "\nBuffer read to position " + string(buffer_tell(buf))
+			throw _e
 		} else {
 			var le_stacktrace = "";
 			for (var i = 0; i < array_length(_e.stacktrace); i++)
 				le_stacktrace += _e.stacktrace[i] + "\n"
 			throw _e.message + "\nBuffer read to position " + string(buffer_tell(buf)) + "\n" + le_stacktrace
 		}
-	} finally {
-		gc_enable(true);
 	}
 	if !correctly_stopped {
 		throw "EOF reached while reading buffer, however STOP opcode is not called"

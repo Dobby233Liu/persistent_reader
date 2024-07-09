@@ -1,53 +1,52 @@
 {
-  "resources": [
-    {"id":{"name":"rpy_persistent_read","path":"scripts/rpy_persistent_read/rpy_persistent_read.yy",},"order":0,},
-    {"id":{"name":"obj_zlibloading","path":"objects/obj_zlibloading/obj_zlibloading.yy",},"order":0,},
-    {"id":{"name":"room_test","path":"rooms/room_test/room_test.yy",},"order":0,},
+  "$GMProject":"",
+  "%Name":"persistent_reader",
+  "AudioGroups":[
+    {"$GMAudioGroup":"","%Name":"audiogroup_default","name":"audiogroup_default","resourceType":"GMAudioGroup","resourceVersion":"2.0","targets":-1,},
   ],
-  "Options": [
-    {"name":"Main","path":"options/main/options_main.yy",},
-    {"name":"Windows","path":"options/windows/options_windows.yy",},
-    {"name":"operagx","path":"options/operagx/options_operagx.yy",},
-  ],
-  "defaultScriptType": 1,
-  "isEcma": false,
-  "configs": {
-    "name": "Default",
-    "children": [],
+  "configs":{
+    "children":[],
+    "name":"Default",
   },
-  "RoomOrderNodes": [
+  "defaultScriptType":1,
+  "Folders":[
+    {"$GMFolder":"","%Name":"便签","folderPath":"folders/便签.yy","name":"便签","resourceType":"GMFolder","resourceVersion":"2.0",},
+    {"$GMFolder":"","%Name":"动画曲线","folderPath":"folders/动画曲线.yy","name":"动画曲线","resourceType":"GMFolder","resourceVersion":"2.0",},
+    {"$GMFolder":"","%Name":"图块集","folderPath":"folders/图块集.yy","name":"图块集","resourceType":"GMFolder","resourceVersion":"2.0",},
+    {"$GMFolder":"","%Name":"声音","folderPath":"folders/声音.yy","name":"声音","resourceType":"GMFolder","resourceVersion":"2.0",},
+    {"$GMFolder":"","%Name":"字体","folderPath":"folders/字体.yy","name":"字体","resourceType":"GMFolder","resourceVersion":"2.0",},
+    {"$GMFolder":"","%Name":"序列","folderPath":"folders/序列.yy","name":"序列","resourceType":"GMFolder","resourceVersion":"2.0",},
+    {"$GMFolder":"","%Name":"房间","folderPath":"folders/房间.yy","name":"房间","resourceType":"GMFolder","resourceVersion":"2.0",},
+    {"$GMFolder":"","%Name":"扩展","folderPath":"folders/扩展.yy","name":"扩展","resourceType":"GMFolder","resourceVersion":"2.0",},
+    {"$GMFolder":"","%Name":"时间轴","folderPath":"folders/时间轴.yy","name":"时间轴","resourceType":"GMFolder","resourceVersion":"2.0",},
+    {"$GMFolder":"","%Name":"物体","folderPath":"folders/物体.yy","name":"物体","resourceType":"GMFolder","resourceVersion":"2.0",},
+    {"$GMFolder":"","%Name":"着色器","folderPath":"folders/着色器.yy","name":"着色器","resourceType":"GMFolder","resourceVersion":"2.0",},
+    {"$GMFolder":"","%Name":"精灵","folderPath":"folders/精灵.yy","name":"精灵","resourceType":"GMFolder","resourceVersion":"2.0",},
+    {"$GMFolder":"","%Name":"脚本","folderPath":"folders/脚本.yy","name":"脚本","resourceType":"GMFolder","resourceVersion":"2.0",},
+    {"$GMFolder":"","%Name":"路径","folderPath":"folders/路径.yy","name":"路径","resourceType":"GMFolder","resourceVersion":"2.0",},
+  ],
+  "IncludedFiles":[
+    {"$GMIncludedFile":"","%Name":"persistent","CopyToMask":-1,"filePath":"datafiles","name":"persistent","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
+    {"$GMIncludedFile":"","%Name":"persistent.dec","CopyToMask":-1,"filePath":"datafiles","name":"persistent.dec","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
+  ],
+  "isEcma":false,
+  "LibraryEmitters":[],
+  "MetaData":{
+    "IDEVersion":"2024.6.1.160",
+  },
+  "name":"persistent_reader",
+  "resources":[
+    {"id":{"name":"obj_zlibloading","path":"objects/obj_zlibloading/obj_zlibloading.yy",},},
+    {"id":{"name":"room_test","path":"rooms/room_test/room_test.yy",},},
+    {"id":{"name":"rpy_persistent_read","path":"scripts/rpy_persistent_read/rpy_persistent_read.yy",},},
+  ],
+  "resourceType":"GMProject",
+  "resourceVersion":"2.0",
+  "RoomOrderNodes":[
     {"roomId":{"name":"room_test","path":"rooms/room_test/room_test.yy",},},
   ],
-  "Folders": [
-    {"folderPath":"folders/精灵.yy","order":1,"resourceVersion":"1.0","name":"精灵","tags":[],"resourceType":"GMFolder",},
-    {"folderPath":"folders/图块集.yy","order":2,"resourceVersion":"1.0","name":"图块集","tags":[],"resourceType":"GMFolder",},
-    {"folderPath":"folders/声音.yy","order":3,"resourceVersion":"1.0","name":"声音","tags":[],"resourceType":"GMFolder",},
-    {"folderPath":"folders/路径.yy","order":4,"resourceVersion":"1.0","name":"路径","tags":[],"resourceType":"GMFolder",},
-    {"folderPath":"folders/脚本.yy","order":5,"resourceVersion":"1.0","name":"脚本","tags":[],"resourceType":"GMFolder",},
-    {"folderPath":"folders/着色器.yy","order":6,"resourceVersion":"1.0","name":"着色器","tags":[],"resourceType":"GMFolder",},
-    {"folderPath":"folders/字体.yy","order":7,"resourceVersion":"1.0","name":"字体","tags":[],"resourceType":"GMFolder",},
-    {"folderPath":"folders/时间轴.yy","order":8,"resourceVersion":"1.0","name":"时间轴","tags":[],"resourceType":"GMFolder",},
-    {"folderPath":"folders/物体.yy","order":9,"resourceVersion":"1.0","name":"物体","tags":[],"resourceType":"GMFolder",},
-    {"folderPath":"folders/房间.yy","order":10,"resourceVersion":"1.0","name":"房间","tags":[],"resourceType":"GMFolder",},
-    {"folderPath":"folders/序列.yy","order":11,"resourceVersion":"1.0","name":"序列","tags":[],"resourceType":"GMFolder",},
-    {"folderPath":"folders/动画曲线.yy","order":12,"resourceVersion":"1.0","name":"动画曲线","tags":[],"resourceType":"GMFolder",},
-    {"folderPath":"folders/便签.yy","order":13,"resourceVersion":"1.0","name":"便签","tags":[],"resourceType":"GMFolder",},
-    {"folderPath":"folders/扩展.yy","order":14,"resourceVersion":"1.0","name":"扩展","tags":[],"resourceType":"GMFolder",},
+  "templateType":null,
+  "TextureGroups":[
+    {"$GMTextureGroup":"","%Name":"Default","autocrop":true,"border":2,"compressFormat":"bz2","customOptions":"","directory":"","groupParent":null,"isScaled":true,"loadType":"default","mipsToGenerate":0,"name":"Default","resourceType":"GMTextureGroup","resourceVersion":"2.0","targets":-1,},
   ],
-  "AudioGroups": [
-    {"targets":-1,"resourceVersion":"1.3","name":"audiogroup_default","resourceType":"GMAudioGroup",},
-  ],
-  "TextureGroups": [
-    {"isScaled":true,"compressFormat":"bz2","autocrop":true,"border":2,"mipsToGenerate":0,"groupParent":null,"targets":-1,"resourceVersion":"1.3","name":"Default","resourceType":"GMTextureGroup",},
-  ],
-  "IncludedFiles": [
-    {"CopyToMask":-1,"filePath":"datafiles","resourceVersion":"1.0","name":"persistent","resourceType":"GMIncludedFile",},
-  ],
-  "MetaData": {
-    "IDEVersion": "2022.3.0.625",
-  },
-  "resourceVersion": "1.5",
-  "name": "persistent_reader",
-  "tags": [],
-  "resourceType": "GMProject",
 }
