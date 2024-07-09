@@ -595,24 +595,18 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 		value = array_pop(stack);
 		throw _RPYP_PKL_STOP_CODE
 	};
-	inst_lut[global._pickle_opcodes.EXT1] = function EXT1 () {
+    function ext_stub () {
 		throw "Extensions are not supported. Corrupt persistent file?"
 	};
-	inst_lut[global._pickle_opcodes.EXT2] = function EXT2 () {
-		throw "Extensions are not supported. Corrupt persistent file?"
-	};
-	inst_lut[global._pickle_opcodes.EXT4] = function EXT4 () {
-		throw "Extensions are not supported. Corrupt persistent file?"
-	};
-	inst_lut[global._pickle_opcodes.LONG] = function LONG () {
+	inst_lut[global._pickle_opcodes.EXT1] = ext_stub
+	inst_lut[global._pickle_opcodes.EXT2] = ext_stub
+	inst_lut[global._pickle_opcodes.EXT4] = ext_stub
+    function long_stub () {
 		throw "Long numbers are currently not supported. Corrupt persistent file?"
 	};
-	inst_lut[global._pickle_opcodes.LONG1] = function LONG1 () {
-		throw "Long numbers are currently not supported. Corrupt persistent file?"
-	};
-	inst_lut[global._pickle_opcodes.LONG4] = function LONG4 () {
-		throw "Long numbers are currently not supported. Corrupt persistent file?"
-	};
+	inst_lut[global._pickle_opcodes.LONG] = long_stub
+	inst_lut[global._pickle_opcodes.LONG1] = long_stub
+	inst_lut[global._pickle_opcodes.LONG4] = long_stub
 	inst_lut[global._pickle_opcodes.POP] = function POP () {
 		if array_pop(stack) == undefined
 			stack = _RPYP_PKL_POP_MARK
@@ -631,12 +625,11 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 		var value = rpyp_pkl_read_line(buf)
 		array_push(stack, real(value))
 	};
-	inst_lut[global._pickle_opcodes.PERSID] = function PERSID () {
+    function persid_stub () {
 		throw "Persistent IDs are not supported. Corrupt persistent file?"
 	};
-	inst_lut[global._pickle_opcodes.BINPERSID] = function BINPERSID () {
-		throw "Persistent IDs are not supported. Corrupt persistent file?"
-	};
+	inst_lut[global._pickle_opcodes.PERSID] = persid_stub
+	inst_lut[global._pickle_opcodes.BINPERSID] = persid_stub
 	inst_lut[global._pickle_opcodes.STRING] = function STRING () {
 		var value = rpyp_pkl_read_line(buf, true)
 		array_push(stack, string_copy(value, 2, string_length(value) - 2))
@@ -698,15 +691,12 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 		var list = new _rpyp_pkl__builtin_tuple().__new__(items)
 		array_push(stack, list)
 	};
-	inst_lut[global._pickle_opcodes.BINUNICODE8] = function BINUNICODE8 () {
+    function sixty_four_bit_stub () {
 		throw "64-bit numbers are currently not supported. Corrupt persistent file?"
 	};
-	inst_lut[global._pickle_opcodes.BINBYTES8] = function BINBYTES8 () {
-		throw "64-bit numbers are currently not supported. Corrupt persistent file?"
-	};
-	inst_lut[global._pickle_opcodes.BYTEARRAY8] = function BYTEARRAY8 () {
-		throw "64-bit numbers are currently not supported. Corrupt persistent file?"
-	};
+	inst_lut[global._pickle_opcodes.BINUNICODE8] = sixty_four_bit_stub
+	inst_lut[global._pickle_opcodes.BINBYTES8] = sixty_four_bit_stub
+	inst_lut[global._pickle_opcodes.BYTEARRAY8] = sixty_four_bit_stub
 	// no bytes support rn
 	inst_lut[global._pickle_opcodes.BINBYTES] = function BINBYTES () {
 		var len = buffer_read(buf, buffer_u32);
@@ -737,12 +727,11 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 	inst_lut[global._pickle_opcodes.FRAME] = function FRAME () {
 		throw "Framing is not supported."
 	};
-	inst_lut[global._pickle_opcodes.NEXT_BUFFER] = function NEXT_BUFFER () {
+    function oob_buf_stub () {
 		throw "Out-of-band buffers are not supported."
 	};
-	inst_lut[global._pickle_opcodes.READONLY_BUFFER] = function READONLY_BUFFER () {
-		throw "Out-of-band buffers are not supported."
-	};
+	inst_lut[global._pickle_opcodes.NEXT_BUFFER] = oob_buf_stub
+	inst_lut[global._pickle_opcodes.READONLY_BUFFER] = oob_buf_stub
 	inst_lut[global._pickle_opcodes.MEMOIZE] = function MEMOIZE () {
 		array_push(memo, array_last(stack))
 	};
