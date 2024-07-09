@@ -27,7 +27,6 @@
   ],
   "IncludedFiles":[
     {"$GMIncludedFile":"","%Name":"persistent","CopyToMask":-1,"filePath":"datafiles","name":"persistent","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
-    {"$GMIncludedFile":"","%Name":"persistent.dec","CopyToMask":-1,"filePath":"datafiles","name":"persistent.dec","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
   ],
   "isEcma":false,
   "LibraryEmitters":[],
