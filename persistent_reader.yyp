@@ -26,7 +26,8 @@
     {"$GMFolder":"","%Name":"路径","folderPath":"folders/路径.yy","name":"路径","resourceType":"GMFolder","resourceVersion":"2.0",},
   ],
   "IncludedFiles":[
-    {"$GMIncludedFile":"","%Name":"persistent","CopyToMask":-1,"filePath":"datafiles","name":"persistent","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
+    {"$GMIncludedFile":"","%Name":"persistent_rival","CopyToMask":-1,"filePath":"datafiles","name":"persistent_rival","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
+    {"$GMIncludedFile":"","%Name":"persistent_ddlc","CopyToMask":-1,"filePath":"datafiles","name":"persistent_ddlc","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
   ],
   "isEcma":false,
   "LibraryEmitters":[],

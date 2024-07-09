@@ -111,6 +111,7 @@ global._pickle_opcodes = {
 }
 
 #macro _RPYP_PKL_POP_MARK array_pop(metastack)
+#macro _RPYP_PKL_POP_MARK_CONTENTS var contents = stack; stack = _RPYP_PKL_POP_MARK
 #macro _RPYP_PKL_STOP_CODE 0xffffffff
 
 // Based on https://meseta.itch.io/gm-msgpack
@@ -214,7 +215,7 @@ function _rpyp_pkl__builtin_tuple() : _rpyp_pkl__builtin_object() constructor {
 	__brackets_r__ = ")"
     __pass_raw_args__ = true
 	__init__ = function(args) {
-		array_copy(__content__, 0, args, 0, array_length(args))
+        __content__ = variable_clone(args, 1)
 	}
 	static __len__ = function () {
 		return array_length(__content__)
@@ -230,7 +231,7 @@ function _rpyp_pkl__builtin_tuple() : _rpyp_pkl__builtin_object() constructor {
 	}
 	__setstate__ = undefined
 	static toString = function () {
-		return __brackets_l__ + string_trim(string(__content__), ["[", "]"]) + __brackets_r__;
+		return __brackets_l__ + string(__content__) + __brackets_r__;
 	}
 };
 // bruh
@@ -370,7 +371,7 @@ function rpyp_pkl_fakeclass_isinstance(inst, module, name) {
 function rpyp_pkl_callfunc(callable, args) {
 	if is_method(callable) {
 		if is_struct(args) {
-			if !variable_struct_exists(args, "__content__")
+			if args.__content__ == undefined
 				throw "Class is not an array-like fake Python class"
 			args = args.__content__
 		}
@@ -386,14 +387,16 @@ function rpyp_pkl_callfunc(callable, args) {
 function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
     buf = _buf
     find_class = _find_class
+    version = -1
 	memo = []
 	stack = []
 	metastack = []
+    ///@type {Any?}
     value = undefined
 	static inst_lut = []
 	inst_lut[global._pickle_opcodes.PROTO] = function PROTO () {
-		var pkl_version = buffer_read(buf, buffer_u8)
-		if (pkl_version > 2)
+		version = buffer_read(buf, buffer_u8)
+		if (version > 2)
 			throw "Pickle protocol version " + string(pkl_version) + " is not fully supported. For safety reading is terminated.";
 	};
 	inst_lut[global._pickle_opcodes.GLOBAL] = function GLOBAL () {
@@ -464,8 +467,7 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 		memo[loc] = array_last(stack)
 	};
 	inst_lut[global._pickle_opcodes.APPENDS] = function APPENDS () {
-		var contents = stack
-		stack = _RPYP_PKL_POP_MARK;
+		_RPYP_PKL_POP_MARK_CONTENTS;
 		var list = array_last(stack);
 		list.__content__ = array_concat(list.__content__, contents);
 	};
@@ -510,16 +512,14 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 		array_push(stack, memo[index])
 	};
 	inst_lut[global._pickle_opcodes.SETITEMS] = function SETITEMS () {
-		var contents = stack
-		stack = _RPYP_PKL_POP_MARK;
+		_RPYP_PKL_POP_MARK_CONTENTS;
 		var dict = array_last(stack)
         var contentsl = array_length(contents)
 		for (var i = 0; i < contentsl; i += 2)
 			dict.__content__[$ contents[i]] = contents[i + 1]
 	};
 	inst_lut[global._pickle_opcodes.ADDITEMS] = function ADDITEMS () {
-		var contents = stack
-		stack = _RPYP_PKL_POP_MARK;
+		_RPYP_PKL_POP_MARK_CONTENTS;
 		array_last(stack).__content__ = contents
 	};
 	inst_lut[global._pickle_opcodes.NONE] = function NONE () {
@@ -715,6 +715,7 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
     }
 }
 
+///@return {Any?}
 function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
 	var correctly_stopped = false;
     var interp = new _rpyp_pkl_interpreter(buf, find_class)
@@ -744,6 +745,7 @@ function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
 	return interp.value;
 }
 
+///@return {Any?}
 function rpy_persistent_read_buffer(cmp_buff, find_class=rpyp_pkl_get_class) {
 	var pickle_buff = undefined
 	try {
@@ -753,8 +755,8 @@ function rpy_persistent_read_buffer(cmp_buff, find_class=rpyp_pkl_get_class) {
 		if buffer_exists(pickle_buff)
 			buffer_delete(pickle_buff)
 	}
-	return undefined;
 }
+///@return {Any?}
 function rpy_persistent_read(fn, find_class=rpyp_pkl_get_class){
 	var orig_file = undefined;
 	try {
@@ -766,8 +768,8 @@ function rpy_persistent_read(fn, find_class=rpyp_pkl_get_class){
 		if buffer_exists(orig_file)
 			buffer_delete(orig_file)
 	}
-	return undefined;
 }
+///@return {Any?}
 function rpy_persistent_read_uncompressed(fn, find_class=rpyp_pkl_get_class){
 	var orig_file = undefined;
 	try {
@@ -779,7 +781,6 @@ function rpy_persistent_read_uncompressed(fn, find_class=rpyp_pkl_get_class){
 		if buffer_exists(orig_file)
 			buffer_delete(orig_file)
 	}
-	return undefined;
 }
 
 function rpy_persistent_convert_from_abstract(obj, rem_internal_entries=false) {
