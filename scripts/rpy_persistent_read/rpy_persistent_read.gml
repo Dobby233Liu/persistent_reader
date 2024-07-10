@@ -182,10 +182,10 @@ function rpyp_pkl_from_decl(str, short = false) {
 }
 
 function _rpyp_pkl__builtin_object() constructor {
-	__module__ = "__builtin__"
-	__name__ = "object"
-	__bases__ = []
-    __pass_raw_args__ = false
+	static __module__ = "__builtin__"
+	static __name__ = "object"
+	static __bases__ = []
+    static __pass_raw_args__ = false
     __init__ = function (_, __) {}
     static __empty_kwargs__ = {}
 	__new__ = function (args, kwargs=__empty_kwargs__ /* fixme */) {
@@ -207,13 +207,13 @@ function _rpyp_pkl__builtin_object() constructor {
 	}
 };
 function _rpyp_pkl__builtin_tuple() : _rpyp_pkl__builtin_object() constructor {
-	__module__ = "__builtin__"
-	__name__ = "tuple"
-	__bases__ = [_rpyp_pkl__builtin_object]
+	static __module__ = "__builtin__"
+	static __name__ = "tuple"
+	static __bases__ = [_rpyp_pkl__builtin_object]
 	__content__ = []
 	__brackets_l__ = "("
 	__brackets_r__ = ")"
-    __pass_raw_args__ = true
+    static __pass_raw_args__ = true
 	__init__ = function(args) {
         __content__ = variable_clone(args, 1)
 	}
@@ -236,9 +236,9 @@ function _rpyp_pkl__builtin_tuple() : _rpyp_pkl__builtin_object() constructor {
 };
 // bruh
 function _rpyp_pkl__builtin_set() : _rpyp_pkl__builtin_tuple() constructor {
-	__module__ = "__builtin__"
-	__name__ = "set"
-	__bases__ = [_rpyp_pkl__builtin_object]
+	static __module__ = "__builtin__"
+	static __name__ = "set"
+	static __bases__ = [_rpyp_pkl__builtin_object]
 	__brackets_l__ = "set(("
 	__brackets_r__ = "))"
 	static add = function(value) {
@@ -249,9 +249,9 @@ function _rpyp_pkl__builtin_set() : _rpyp_pkl__builtin_tuple() constructor {
 	}
 };
 function _rpyp_pkl__builtin_frozenset() : _rpyp_pkl__builtin_set() constructor {
-	__module__ = "__builtin__"
-	__name__ = "frozenset"
-	__bases__ = [_rpyp_pkl__builtin_set, _rpyp_pkl__builtin_object]
+	static __module__ = "__builtin__"
+	static __name__ = "frozenset"
+	static __bases__ = [_rpyp_pkl__builtin_set, _rpyp_pkl__builtin_object]
 	__brackets_l__ = "frozenset({"
 	__brackets_r__ = "})"
 	static add = function(value) {
@@ -268,9 +268,9 @@ function _rpyp_pkl__builtin_frozenset() : _rpyp_pkl__builtin_set() constructor {
 	}
 };
 function _rpyp_pkl__builtin_list() : _rpyp_pkl__builtin_tuple() constructor {
-	__module__ = "__builtin__"
-	__name__ = "list"
-	__bases__ = [_rpyp_pkl__builtin_object]
+	static __module__ = "__builtin__"
+	static __name__ = "list"
+	static __bases__ = [_rpyp_pkl__builtin_object]
 	__brackets_l__ = "["
 	__brackets_r__ = "]"
 	static extend = function (arr) {
@@ -279,9 +279,9 @@ function _rpyp_pkl__builtin_list() : _rpyp_pkl__builtin_tuple() constructor {
 	}
 };
 function _rpyp_pkl__builtin_dict() : _rpyp_pkl__builtin_object() constructor {
-	__module__ = "__builtin__"
-	__name__ = "dict"
-	__bases__ = [_rpyp_pkl__builtin_object]
+	static __module__ = "__builtin__"
+	static __name__ = "dict"
+	static __bases__ = [_rpyp_pkl__builtin_object]
 	__content__ = {}
 	__brackets_l__ = "{"
 	__brackets_r__ = "}"
@@ -308,30 +308,30 @@ function _rpyp_pkl__builtin_dict() : _rpyp_pkl__builtin_object() constructor {
 	}
 };
 function _rpyp_pkl_renpy_persistent_Persistent() : _rpyp_pkl__builtin_object() constructor {
-	__module__ = "renpy.persistent"
-	__name__ = "Persistent"
-	__bases__ = [_rpyp_pkl__builtin_object]
+	static __module__ = "renpy.persistent"
+	static __name__ = "Persistent"
+	static __bases__ = [_rpyp_pkl__builtin_object]
 };
 function _rpyp_pkl_renpy_preferences_Preferences() : _rpyp_pkl__builtin_object() constructor {
-	__module__ = "renpy.preferences"
-	__name__ = "Preferences"
-	__bases__ = [_rpyp_pkl__builtin_object]
+	static __module__ = "renpy.preferences"
+	static __name__ = "Preferences"
+	static __bases__ = [_rpyp_pkl__builtin_object]
 };
 function _rpyp_pkl_renpy_python_RevertableDict() : _rpyp_pkl__builtin_dict() constructor {
-	__module__ = "renpy.python"
-	__name__ = "RevertableDict"
-	__bases__ = [_rpyp_pkl__builtin_dict, _rpyp_pkl__builtin_object]
+	static __module__ = "renpy.python"
+	static __name__ = "RevertableDict"
+	static __bases__ = [_rpyp_pkl__builtin_dict, _rpyp_pkl__builtin_object]
 };
 function _rpyp_pkl_renpy_python_RevertableList() : _rpyp_pkl__builtin_list() constructor {
-	__module__ = "renpy.python"
-	__name__ = "RevertableList"
-	__bases__ = [_rpyp_pkl__builtin_list, _rpyp_pkl__builtin_object]
+	static __module__ = "renpy.python"
+	static __name__ = "RevertableList"
+	static __bases__ = [_rpyp_pkl__builtin_list, _rpyp_pkl__builtin_object]
 };
 // this needs to be done for some reason
 function _rpyp_pkl_renpy_python_RevertableSet() : _rpyp_pkl__builtin_tuple() constructor {
-	__module__ = "renpy.python"
-	__name__ = "RevertableSet"
-	__bases__ = [_rpyp_pkl__builtin_set, _rpyp_pkl__builtin_object]
+	static __module__ = "renpy.python"
+	static __name__ = "RevertableSet"
+	static __bases__ = [_rpyp_pkl__builtin_set, _rpyp_pkl__builtin_object]
 	__brackets_l__ = "set(("
 	__brackets_r__ = "))"
 	static add = function(value) {
