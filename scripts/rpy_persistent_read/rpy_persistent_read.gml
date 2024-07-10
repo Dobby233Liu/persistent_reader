@@ -392,7 +392,7 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 	stack = []
 	metastack = []
     value = undefined
-	static inst_lut = []
+	inst_lut = []
 	inst_lut[global._pickle_opcodes.PROTO] = function PROTO () {
 		version = buffer_read(buf, buffer_u8)
 		if (version > 2)
