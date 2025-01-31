@@ -388,23 +388,25 @@ function rpyp_pkl_fakeclass_isinstance(inst, module, name) {
 	return is_struct(inst) && inst.__module__ == module && inst.__name__ == name
 }
 
-/*function rpyp_pkl_callfunc(callable, args) {
+function rpyp_pkl_callfunc(callable, args) {
     if is_undefined(callable)
         throw "Calling undefined??"
-	if is_callable(callable) {
-		if is_struct(args) {
-			if args.__content__ == undefined
-				throw "Class is not an array-like fake Python class"
-			args = args.__content__
-		}
+    if is_callable(callable) {
+        if is_struct(args) {
+            if args.__content__ == undefined
+                    throw "Class is not an array-like fake Python class"
+            args = args.__content__
+        }
         if !is_array(args) {
-			throw "args argument is not an array"
-		}
-		return script_execute_ext(callable, args)
-	} else {
-		throw "Object is not callable"
-	}
-}*/
+            throw "args argument is not an array"
+        }
+        if script_exists(callable) // FIXME (reduce)
+            return new callable().__new__(args);
+        return script_execute_ext(callable, args);
+    } else {
+        throw "Object is not callable"
+    }
+}
 
 function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
     buf = _buf
@@ -514,9 +516,9 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 		array_push(stack, obj)
 	};
 	inst_lut[global._pickle_opcodes.REDUCE] = function REDUCE () {
-		var args = array_pop(stack).__content__[0];
+		var args = array_pop(stack).__content__[0]; // FIXME (reduce)
 		var callable = array_pop(stack);
-		array_push(stack, new callable().__new__(args))
+		array_push(stack, rpyp_pkl_callfunc(callable, args))
 	};
 	inst_lut[global._pickle_opcodes.NEWTRUE] = function NEWTRUE () {
 		array_push(stack, true)
