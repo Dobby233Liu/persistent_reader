@@ -389,7 +389,7 @@ function rpyp_pkl_fakeclass_isinstance(inst, module, name) {
 }
 
 function rpyp_pkl_callfunc(callable, args) {
-	if is_method(callable) {
+	if is_callable(callable) {
 		if is_struct(args) {
 			if args.__content__ == undefined
 				throw "Class is not an array-like fake Python class"
@@ -407,6 +407,14 @@ function rpyp_pkl_callfunc(callable, args) {
 function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
     buf = _buf
     find_class = _find_class
+    _cached_builtin_classes = {
+    	"object" : find_class("__builtin__", "object"),
+    	"tuple" : find_class("__builtin__", "tuple"),
+    	"dict" : find_class("__builtin__", "dict"),
+    	"set" : find_class("__builtin__", "set"),
+    	"frozenset" : find_class("__builtin__", "frozenset"),
+    	"list" : find_class("__builtin__", "list"),
+    }
     version = -1
 	memo = []
 	stack = []
@@ -424,7 +432,7 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 	inst_lut[global._pickle_opcodes.GLOBAL] = function GLOBAL () {
 		var origin = rpyp_pkl_read_line(buf)
 		var class = rpyp_pkl_read_line(buf)
-		class = method(self, find_class(origin, class))
+		class = find_class(origin, class)
 		array_push(stack, class)
 	};
 	inst_lut[global._pickle_opcodes.STACK_GLOBAL] = function STACK_GLOBAL () {
@@ -439,7 +447,7 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 		memo[loc] = array_last(stack)
 	};
 	inst_lut[global._pickle_opcodes.EMPTY_TUPLE] = function EMPTY_TUPLE () {
-		array_push(stack, new _rpyp_pkl__builtin_tuple().__new__([]))
+		array_push(stack, new (_cached_builtin_classes.tuple)().__new__([]))
 	};
 	inst_lut[global._pickle_opcodes.NEWOBJ] = function NEWOBJ () {
 		var args = array_pop(stack).__content__
@@ -447,10 +455,10 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 		array_push(stack, new cls().__new__(args))
 	};
 	inst_lut[global._pickle_opcodes.EMPTY_DICT] = function EMPTY_DICT () {
-		array_push(stack, new _rpyp_pkl__builtin_dict().__new__([]))
+		array_push(stack, new (_cached_builtin_classes.dict)().__new__([]))
 	};
 	inst_lut[global._pickle_opcodes.EMPTY_SET] = function EMPTY_SET () {
-		array_push(stack, new _rpyp_pkl__builtin_set().__new__([]))
+		array_push(stack, new (_cached_builtin_classes.set)().__new__([]))
 	};
 	inst_lut[global._pickle_opcodes.MARK] = function MARK () {
 		array_push(metastack, stack)
@@ -470,7 +478,7 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 		array_push(stack, buffer_read(buf, buffer_u8))
 	};
 	inst_lut[global._pickle_opcodes.EMPTY_LIST] = function EMPTY_LIST () {
-		array_push(stack, new _rpyp_pkl__builtin_list().__new__([]))
+		array_push(stack, new (_cached_builtin_classes.list)().__new__([]))
 	};
 	inst_lut[global._pickle_opcodes.BINUNICODE] = function BINUNICODE () {
 		var len = buffer_read(buf, buffer_u32);
@@ -499,7 +507,7 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 		list.__content__ = array_concat(list.__content__, contents);
 	};
 	inst_lut[global._pickle_opcodes.TUPLE1] = function TUPLE1 () {
-		var obj = new _rpyp_pkl__builtin_tuple().__new__([array_pop(stack)]);
+		var obj = new (_cached_builtin_classes.tuple)().__new__([array_pop(stack)]);
 		array_push(stack, obj)
 	};
 	inst_lut[global._pickle_opcodes.REDUCE] = function REDUCE () {
@@ -523,7 +531,7 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 		var tcontents = []
 		tcontents[1] = array_pop(stack)
 		tcontents[0] = array_pop(stack)
-		var obj = new _rpyp_pkl__builtin_tuple().__new__(tcontents);
+		var obj = new (_cached_builtin_classes.tuple)().__new__(tcontents);
 		array_push(stack, obj)
 	};
 	inst_lut[global._pickle_opcodes.TUPLE3] = function TUPLE3 () {
@@ -531,7 +539,7 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 		tcontents[2] = array_pop(stack)
 		tcontents[1] = array_pop(stack)
 		tcontents[0] = array_pop(stack)
-		var obj = new _rpyp_pkl__builtin_tuple().__new__(tcontents);
+		var obj = new (_cached_builtin_classes.tuple)().__new__(tcontents);
 		array_push(stack, obj)
 	};
 	inst_lut[global._pickle_opcodes.LONG_BINGET] = function LONG_BINGET () {
@@ -602,7 +610,7 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
         }
         var cls = extensions[code]
         if !is_undefined(cls)
-            array_push(stack, find_class(cls[0], cls[1]));
+            array_push(stack, method(self, find_class(cls[0], cls[1])));
         else
             throw "Unregistered extension " + code
     }
@@ -687,7 +695,7 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 	inst_lut[global._pickle_opcodes.DICT] = function DICT () {
 		var items = stack
 		stack = _RPYP_PKL_POP_MARK
-		var dict = new _rpyp_pkl__builtin_dict().__new__([])
+		var dict = new (_cached_builtin_classes.dict)().__new__([])
 		for (var i = 0; i < array_length(items); i += 2)
 			dict.__content__[$ items[i]] = items[i + 1]
 		array_push(stack, dict)
@@ -714,7 +722,7 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 	inst_lut[global._pickle_opcodes.LIST] = function LIST () {
 		var items = stack
 		stack = _RPYP_PKL_POP_MARK
-		var list = new _rpyp_pkl__builtin_list().__new__(items)
+		var list = new (_cached_builtin_classes.list)().__new__(items)
 		array_push(stack, list)
 	};
 	inst_lut[global._pickle_opcodes.PUT] = function PUT () {
@@ -730,7 +738,7 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 	inst_lut[global._pickle_opcodes.TUPLE] = function TUPLE () {
 		var items = stack
 		stack = _RPYP_PKL_POP_MARK
-		var list = new _rpyp_pkl__builtin_tuple().__new__(items)
+		var list = new (_cached_builtin_classes.tuple)().__new__(items)
 		array_push(stack, list)
 	};
 	// there isn't really any kind of bytes support, but it should be ok
@@ -758,7 +766,7 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 	inst_lut[global._pickle_opcodes.FROZENSET] = function FROZENSET () {
 		var items = stack
 		stack = _RPYP_PKL_POP_MARK
-		var set = new _rpyp_pkl__builtin_frozenset().__new__([])
+		var set = new (_cached_builtin_classes.frozenset)().__new__([])
 		set.__content__ = items
 		array_push(stack, set)
 	};
