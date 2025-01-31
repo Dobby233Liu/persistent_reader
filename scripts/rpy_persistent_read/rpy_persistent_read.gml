@@ -1,4 +1,4 @@
-// Copyright (c) 2022-2024 Liu Wenyuan
+// Copyright (c) 2022-2025 Liu Wenyuan
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +24,7 @@
 // All Rights Reserved
 // See <https://wiki.python.org/moin/PythonSoftwareFoundationLicenseV2Easy> for license.
 
-// Hacked together DDLC persistent reader (protocol 2)
+// Hacked together DDLC persistent reader/unpickler (up to protocol 2)
 // by Dobby233Liu
 // works as long as DDLC don't update to a new Python version
 
@@ -308,7 +308,8 @@ function _rpyp_pkl__builtin_dict() : _rpyp_pkl__builtin_object() constructor {
 	__brackets_r__ = "}"
 	__dict__ = self
 	__init__ = function(kwargs) {
-        __content__ = variable_clone(kwargs, 1)
+        if argument_count > 0
+            __content__ = variable_clone(kwargs, 1)
 	}
 	static __getitem__ = function (key) {
 		return __content__[$ key];
