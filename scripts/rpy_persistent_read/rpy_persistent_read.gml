@@ -206,7 +206,7 @@ function _rpyp_pkl__builtin_object() constructor {
 	static __module__ = "__builtin__"
 	static __name__ = "object"
 	static __bases__ = []
-    static __pass_raw_args__ = false
+    __pass_raw_args__ = false
     __init__ = function (kwargs, args) {}
     static __empty_kwargs__ = {}
 	__new__ = function (args, kwargs=__empty_kwargs__ /* fixme */) {
@@ -234,7 +234,7 @@ function _rpyp_pkl__builtin_tuple() : _rpyp_pkl__builtin_object() constructor {
 	__content__ = []
 	__brackets_l__ = "("
 	__brackets_r__ = ")"
-    static __pass_raw_args__ = true
+    __pass_raw_args__ = true
 	__init__ = function(_, args) {
         __content__ = variable_clone(args, 1)
 	}
@@ -388,7 +388,9 @@ function rpyp_pkl_fakeclass_isinstance(inst, module, name) {
 	return is_struct(inst) && inst.__module__ == module && inst.__name__ == name
 }
 
-function rpyp_pkl_callfunc(callable, args) {
+/*function rpyp_pkl_callfunc(callable, args) {
+    if is_undefined(callable)
+        throw "Calling undefined??"
 	if is_callable(callable) {
 		if is_struct(args) {
 			if args.__content__ == undefined
@@ -402,7 +404,7 @@ function rpyp_pkl_callfunc(callable, args) {
 	} else {
 		throw "Object is not callable"
 	}
-}
+}*/
 
 function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
     buf = _buf
@@ -507,13 +509,14 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 		list.__content__ = array_concat(list.__content__, contents);
 	};
 	inst_lut[global._pickle_opcodes.TUPLE1] = function TUPLE1 () {
-		var obj = new (_cached_builtin_classes.tuple)().__new__([array_pop(stack)]);
+        var contents = array_pop(stack)
+		var obj = new (_cached_builtin_classes.tuple)().__new__([contents]);
 		array_push(stack, obj)
 	};
 	inst_lut[global._pickle_opcodes.REDUCE] = function REDUCE () {
-		var args = array_pop(stack);
+		var args = array_pop(stack).__content__[0];
 		var callable = array_pop(stack);
-		array_push(stack, rpyp_pkl_callfunc(callable, args))
+		array_push(stack, new callable().__new__(args))
 	};
 	inst_lut[global._pickle_opcodes.NEWTRUE] = function NEWTRUE () {
 		array_push(stack, true)
@@ -576,7 +579,8 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 				var rstate = state.__content__
 				var sitems = variable_struct_get_names(rstate)
 				for (var i = 0; i < array_length(sitems); i++) {
-					obj.__dict__.__content__[$ sitems[i]] = rstate[$ sitems[i]]
+                    // original writes to the instance's __dict__
+					obj[$ sitems[i]] = rstate[$ sitems[i]]
 				}
 			}
 			if slotstate != undefined {
@@ -878,7 +882,7 @@ function rpy_persistent_read_uncompressed(fn, find_class=rpyp_pkl_get_class){
 }
 
 function rpy_persistent_convert_from_abstract(obj, rem_internal_entries=false) {
-    if is_struct(obj) && variable_struct_exists(obj, "__content__") {
+    while is_struct(obj) && variable_struct_exists(obj, "__content__") {
     	obj = obj.__content__
     }
     if !is_struct(obj)
@@ -892,11 +896,15 @@ function rpy_persistent_convert_from_abstract(obj, rem_internal_entries=false) {
     		continue;
     	if string_copy(key, 0, 2) == "__" && string_copy(key, string_length(key) - 1, 2) == "__"
     		continue;
-    	if is_struct(value) {
-    		if variable_struct_exists(value, "__content__")
-    			value = value.__content__
-    		else
-    			value = rpy_persistent_convert_from_abstract(value, false)
+    	while is_struct(value) && variable_struct_exists(value, "__module__")
+    		value = rpy_persistent_convert_from_abstract(value, rem_internal_entries)
+    	if is_array(value) {
+    		value = variable_clone(value, 1)
+            for (var j = 0; j < array_length(value); j++) {
+                var jj = value[j];
+                if is_struct(jj) && variable_struct_exists(jj, "__module__")
+                    value[j] = rpy_persistent_convert_from_abstract(jj, rem_internal_entries)
+            }
     	}
     	struct[$ key] = value
     }

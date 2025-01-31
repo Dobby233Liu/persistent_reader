@@ -26,7 +26,9 @@
     {"$GMFolder":"","%Name":"路径","folderPath":"folders/路径.yy","name":"路径","resourceType":"GMFolder","resourceVersion":"2.0",},
   ],
   "IncludedFiles":[
+    {"$GMIncludedFile":"","%Name":"dis.txt","CopyToMask":-1,"filePath":"datafiles","name":"dis.txt","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"persistent_ddlc","CopyToMask":-1,"filePath":"datafiles","name":"persistent_ddlc","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
+    {"$GMIncludedFile":"","%Name":"persistent_ddlc.pickle","CopyToMask":-1,"filePath":"datafiles","name":"persistent_ddlc.pickle","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"persistent_rival","CopyToMask":-1,"filePath":"datafiles","name":"persistent_rival","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"pickle_p0","CopyToMask":-1,"filePath":"datafiles","name":"pickle_p0","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
   ],
