@@ -252,7 +252,8 @@ function _rpyp_pkl__builtin_tuple() : _rpyp_pkl__builtin_object() constructor {
 	}
 	__setstate__ = undefined
 	static toString = function () {
-		return __brackets_l__ + string(__content__) + __brackets_r__;
+        var inner = string(__content__)
+		return __brackets_l__ + string_copy(inner, 2, string_length(inner) - 2) + __brackets_r__;
 	}
 };
 // bruh
