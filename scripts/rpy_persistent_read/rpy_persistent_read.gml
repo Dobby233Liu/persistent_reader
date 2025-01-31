@@ -198,8 +198,7 @@ function rpyp_pkl_from_decl(str, short = false) {
 		else if str == "01"
 			return true
 	}
-	// evil
-	return round(real(str))
+	return real(str)
 }
 
 function _rpyp_pkl__builtin_object() constructor {
