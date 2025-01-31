@@ -92,7 +92,6 @@ global._pickle_opcodes = {
 	SHORT_BINBYTES : ord("C"),
 
 	// Protocol 4
-	// 8-bytes not supported by GM rn
 	SHORT_BINUNICODE : ord("\x8c"),
 	BINUNICODE8      : ord("\x8d"),
 	BINBYTES8        : ord("\x8e"),
@@ -138,6 +137,8 @@ function rpyp_pkl_read_double_be(buf) {
 function rpyp_pkl_read_binstring(buf, startpoint, len, movecursor = true, escape = false) {
 	if len == 0
 		return ""
+    else if len < 0
+        throw "String length negative"
 	else if buffer_get_size(buf) < (startpoint + len)
 		throw "String length out of bounds";
 	var _buf = buffer_create(len, buffer_fixed, 1)
@@ -155,12 +156,32 @@ function rpyp_pkl_read_line(buf, escape = false) {
 		if buffer_get_size(buf) <= buffer_tell(buf) {
 			throw "Buffer exhausted while reading a line"
 		}
-		if buffer_read(buf, buffer_u8) == ord("\n") {
+		if buffer_read(buf, buffer_u8) == ord("\n") { // should be safe to assume it's not bogus even in utf8
 			endpoint = buffer_tell(buf) - 1
 			break;
 		}
 	}
 	return rpyp_pkl_read_binstring(buf, startpoint, endpoint - startpoint, false, escape);
+}
+
+// will literally read it into an array
+function rpyp_pkl_read_bytearray(buf, startpoint, len, movecursor = true) {
+	if len == 0
+		return []
+    else if len < 0
+        throw "Bytearray length negative"
+	else if buffer_get_size(buf) < (startpoint + len)
+		throw "Bytearray length out of bounds";
+    var old_cursor = buffer_tell(buf)
+	buffer_seek(buf, buffer_seek_start, startpoint + len)
+    var arr = []
+	for (var i = len - 1; i >= 0; i--)
+        arr[i] = buffer_read(buf, buffer_u8);
+	if movecursor
+		buffer_seek(buf, buffer_seek_start, startpoint + len)
+    else
+        buffer_seek(buf, buffer_seek_start, old_cursor)
+	return arr
 }
 
 /**
@@ -186,13 +207,13 @@ function _rpyp_pkl__builtin_object() constructor {
 	static __name__ = "object"
 	static __bases__ = []
     static __pass_raw_args__ = false
-    __init__ = function (_, __) {}
+    __init__ = function (kwargs, args) {}
     static __empty_kwargs__ = {}
 	__new__ = function (args, kwargs=__empty_kwargs__ /* fixme */) {
         if (__pass_raw_args__)
-            __init__(args, kwargs)
+            __init__(kwargs, args)
         else
-		    script_execute_ext(__init__, args);
+		    script_execute_ext(__init__, array_concat([kwargs], args));
 		return self;
 	}
 	static toString = function() {
@@ -214,7 +235,7 @@ function _rpyp_pkl__builtin_tuple() : _rpyp_pkl__builtin_object() constructor {
 	__brackets_l__ = "("
 	__brackets_r__ = ")"
     static __pass_raw_args__ = true
-	__init__ = function(args) {
+	__init__ = function(_, args) {
         __content__ = variable_clone(args, 1)
 	}
 	static __len__ = function () {
@@ -286,10 +307,8 @@ function _rpyp_pkl__builtin_dict() : _rpyp_pkl__builtin_object() constructor {
 	__brackets_l__ = "{"
 	__brackets_r__ = "}"
 	__dict__ = self
-	__init__ = function() {
-		if argument_count > 0 {
-			throw "Unimplemented";
-		}
+	__init__ = function(kwargs) {
+        __content__ = variable_clone(kwargs, 1)
 	}
 	static __getitem__ = function (key) {
 		return __content__[$ key];
@@ -391,6 +410,9 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 	memo = []
 	stack = []
 	metastack = []
+    extensions = []
+    // TODO
+    oob_buffers = undefined // managed by the user
     value = undefined
 	inst_lut = []
 	inst_lut[global._pickle_opcodes.PROTO] = function PROTO () {
@@ -411,7 +433,7 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 	};
 	inst_lut[global._pickle_opcodes.BINPUT] = function BINPUT () {
 		var loc = buffer_read(buf, buffer_u8)
-		if (loc < 0)
+		if (loc < 0) // FIXME ?
 			throw "Negative BINPUT argument";
 		memo[loc] = array_last(stack)
 	};
@@ -459,9 +481,14 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 		var str = rpyp_pkl_read_binstring(buf, buffer_tell(buf), len, true);
 		array_push(stack, str)
 	};
+	inst_lut[global._pickle_opcodes.BINUNICODE8] = function BINUNICODE8 () {
+		var len = buffer_read(buf, buffer_u64);
+		var str = rpyp_pkl_read_binstring(buf, buffer_tell(buf), len, true);
+		array_push(stack, str)
+	};
 	inst_lut[global._pickle_opcodes.LONG_BINPUT] = function LONG_BINPUT () {
 		var loc = buffer_read(buf, buffer_u32)
-		if (loc < 0)
+		if (loc < 0) // FIXME: > maxsize
 			throw "Negative LONG_BINPUT argument";
 		memo[loc] = array_last(stack)
 	};
@@ -555,26 +582,63 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 	inst_lut[global._pickle_opcodes.BINGET] = function BINGET () {
 		var index = buffer_read(buf, buffer_u8)
 		array_push(stack, memo[index])
-	};
+	}
 	inst_lut[global._pickle_opcodes.BINFLOAT] = function BINFLOAT () {
 		array_push(stack, rpyp_pkl_read_double_be(buf))
-	};
+	}
 	inst_lut[global._pickle_opcodes.STOP] = function STOP () {
 		value = array_pop(stack);
 		throw _RPYP_PKL_STOP_CODE
-	};
-    function ext_stub () {
-		throw "Extensions are not supported. Corrupt persistent file?"
-	};
-	inst_lut[global._pickle_opcodes.EXT1] = ext_stub
-	inst_lut[global._pickle_opcodes.EXT2] = ext_stub
-	inst_lut[global._pickle_opcodes.EXT4] = ext_stub
-    function long_stub () {
+	}
+    _extension_cache = []
+    _load_ext = function(code) {
+        if code <= 0
+            throw "Invalid extension code"
+        var cached = _extension_cache[code]
+        if !is_undefined(cached) {
+            array_push(stack, cached)
+            return
+        }
+        var cls = extensions[code]
+        if !is_undefined(cls)
+            array_push(stack, find_class(cls[0], cls[1]));
+        else
+            throw "Unregistered extension " + code
+    }
+	inst_lut[global._pickle_opcodes.EXT1] = function EXT1 () {
+        _load_ext(buffer_read(buf, buffer_u8))
+	}
+	inst_lut[global._pickle_opcodes.EXT2] = function EXT2 () {
+        _load_ext(buffer_read(buf, buffer_u16))
+	}
+	inst_lut[global._pickle_opcodes.EXT4] = function EXT4 () {
+        _load_ext(buffer_read(buf, buffer_s32))
+	}
+	inst_lut[global._pickle_opcodes.LONG] = function LONG () {
+        // FIXME
+		var rawvalue = rpyp_pkl_read_line(buf)
+        if string_char_at(rawvalue, string_length(rawvalue)) == "L"
+            rawvalue = string_delete(rawvalue, string_length(rawvalue), 1)
+		array_push(stack, real(rawvalue))
+	}
+	inst_lut[global._pickle_opcodes.LONG1] = function LONG1 () {
+		var len = buffer_read(buf, buffer_u8)
+        if len == 0 {
+            array_push(stack, 0)
+            return
+        }
 		throw "Long numbers are currently not supported. Corrupt persistent file?"
-	};
-	inst_lut[global._pickle_opcodes.LONG] = long_stub
-	inst_lut[global._pickle_opcodes.LONG1] = long_stub
-	inst_lut[global._pickle_opcodes.LONG4] = long_stub
+	}
+	inst_lut[global._pickle_opcodes.LONG4] = function LONG4 () {
+		var len = buffer_read(buf, buffer_s32)
+        if len < 0
+            throw "Long number length negative"
+        if len == 0 {
+            array_push(stack, 0)
+            return
+        }
+		throw "Long numbers are currently not supported. Corrupt persistent file?"
+	}
 	inst_lut[global._pickle_opcodes.POP] = function POP () {
 		if array_pop(stack) == undefined
 			stack = _RPYP_PKL_POP_MARK
@@ -590,14 +654,23 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 		array_push(stack, real(value))
 	};
 	inst_lut[global._pickle_opcodes.INT] = function INT () {
-		var value = rpyp_pkl_read_line(buf)
-		array_push(stack, real(value))
+		var rawvalue = rpyp_pkl_read_line(buf)
+        var value = real(rawvalue) // int32
+        if rawvalue == "00" value = false
+        else if rawvalue == "01" value = true
+		array_push(stack, value)
 	};
-    function persid_stub () {
-		throw "Persistent IDs are not supported. Corrupt persistent file?"
-	};
-	inst_lut[global._pickle_opcodes.PERSID] = persid_stub
-	inst_lut[global._pickle_opcodes.BINPERSID] = persid_stub
+    load_persid = function(pid) {
+        throw "Persistent IDs are not implemented"
+    }
+	inst_lut[global._pickle_opcodes.PERSID] = function PERSID () {
+		var pid = rpyp_pkl_read_line(buf)
+        array_push(stack, load_persid(pid))
+	}
+	inst_lut[global._pickle_opcodes.BINPERSID] = function BINPERSID () {
+		var pid = array_pop(stack)
+        array_push(stack, load_persid(pid))
+	}
 	inst_lut[global._pickle_opcodes.STRING] = function STRING () {
 		var value = rpyp_pkl_read_line(buf, true)
 		array_push(stack, string_copy(value, 2, string_length(value) - 2))
@@ -659,13 +732,8 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 		var list = new _rpyp_pkl__builtin_tuple().__new__(items)
 		array_push(stack, list)
 	};
-    function sixty_four_bit_stub () {
-		throw "64-bit numbers are currently not supported. Corrupt persistent file?"
-	};
-	inst_lut[global._pickle_opcodes.BINUNICODE8] = sixty_four_bit_stub
-	inst_lut[global._pickle_opcodes.BINBYTES8] = sixty_four_bit_stub
-	inst_lut[global._pickle_opcodes.BYTEARRAY8] = sixty_four_bit_stub
-	// no bytes support rn
+	// there isn't really any kind of bytes support, but it should be ok
+    // to read them into gm strings
 	inst_lut[global._pickle_opcodes.BINBYTES] = function BINBYTES () {
 		var len = buffer_read(buf, buffer_u32);
 		var str = rpyp_pkl_read_binstring(buf, buffer_tell(buf), len, true);
@@ -676,6 +744,16 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 		var str = rpyp_pkl_read_binstring(buf, buffer_tell(buf), len, true);
 		array_push(stack, str)
 	};
+	inst_lut[global._pickle_opcodes.BINBYTES8] = function BINBYTES8 () {
+		var len = buffer_read(buf, buffer_u64);
+		var str = rpyp_pkl_read_binstring(buf, buffer_tell(buf), len, true);
+		array_push(stack, str)
+	};
+	inst_lut[global._pickle_opcodes.BYTEARRAY8] = function BYTEARRAY8 () {
+		var len = buffer_read(buf, buffer_u64);
+		var str = rpyp_pkl_read_bytearray(buf, buffer_tell(buf), len, true);
+		array_push(stack, str)
+	};
 	inst_lut[global._pickle_opcodes.FROZENSET] = function FROZENSET () {
 		var items = stack
 		stack = _RPYP_PKL_POP_MARK
@@ -684,25 +762,28 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 		array_push(stack, set)
 	};
 	inst_lut[global._pickle_opcodes.NEWOBJ_EX] = function NEWOBJ_EX () {
-		/*
 		var kwargs = array_pop(stack).__content__
 		var args = array_pop(stack).__content__
 		var cls = array_pop(stack)
 
-		array_push(stack, new cls().__new__(args, kwargs)) */
-		throw "Keyword arguments are not supported."
+		array_push(stack, new cls().__new__(args, kwargs))
 	};
 	inst_lut[global._pickle_opcodes.FRAME] = function FRAME () {
-		throw "Framing is not supported."
+		//throw "Framing is not supported."
+        // doesnt really matter to us as we always work with a buffer
+        // (stuff is already read into memory)
+        // TODO: verify
+        buffer_read(buf, buffer_u64); // len
 	};
     function oob_buf_stub () {
-		throw "Out-of-band buffers are not supported."
+		throw "Out-of-band buffers are currently not supported."
 	};
 	inst_lut[global._pickle_opcodes.NEXT_BUFFER] = oob_buf_stub
 	inst_lut[global._pickle_opcodes.READONLY_BUFFER] = oob_buf_stub
 	inst_lut[global._pickle_opcodes.MEMOIZE] = function MEMOIZE () {
 		array_push(memo, array_last(stack))
 	};
+
     step = function() {
         var inst = buffer_read(buf, buffer_u8), inst_f
         try {
