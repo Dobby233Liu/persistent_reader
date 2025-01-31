@@ -555,7 +555,7 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 	};
 	inst_lut[global._pickle_opcodes.ADDITEMS] = function ADDITEMS () {
 		_RPYP_PKL_POP_MARK_CONTENTS;
-		array_last(stack).__content__ = contents
+		array_last(stack).__content__ = array_concat(array_last(stack).__content__, contents)
 	};
 	inst_lut[global._pickle_opcodes.NONE] = function NONE () {
 		array_push(stack, undefined);
@@ -792,14 +792,15 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 	inst_lut[global._pickle_opcodes.MEMOIZE] = function MEMOIZE () {
 		array_push(memo, array_last(stack))
 	};
+    _inst_last = array_length(inst_lut);
 
     step = function() {
         var inst = buffer_read(buf, buffer_u8), inst_f
-        try {
-		    inst_f = inst_lut[inst]
-        } catch (_) {
+        if inst >= _inst_last
+			throw "Unknown opcode " + chr(inst) + " " + string(inst);
+		inst_f = inst_lut[inst]
+        if is_undefined(inst_f)
 			throw "Unknown opcode " + chr(inst);
-        }
         inst_f()
     }
 }
