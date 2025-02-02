@@ -11,7 +11,7 @@ function my_find_global(ns, name) {
     return rpyp_pkl_get_global(ns, name);
 }
 
-var pdata = rpy_persistent_read_uncompressed("pinf.proto2.pkl", method(self, my_find_global))
+var pdata = rpy_persistent_read("persistent_ddlc", method(self, my_find_global))
 pdata = rpy_persistent_convert_from_abstract(pdata)
 
 dump = json_stringify(pdata, true)

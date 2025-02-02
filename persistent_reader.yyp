@@ -36,7 +36,6 @@
     {"$GMIncludedFile":"","%Name":"persistent_rsj","CopyToMask":-1,"filePath":"datafiles","name":"persistent_rsj","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"persistent_rsj.pickle","CopyToMask":-1,"filePath":"datafiles","name":"persistent_rsj.pickle","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"pickle_p0","CopyToMask":-1,"filePath":"datafiles","name":"pickle_p0","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
-    {"$GMIncludedFile":"","%Name":"pinf.proto2.pkl","CopyToMask":-1,"filePath":"datafiles","name":"pinf.proto2.pkl","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"rick.proto0.pkl","CopyToMask":-1,"filePath":"datafiles","name":"rick.proto0.pkl","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"unzlib.py","CopyToMask":-1,"filePath":"datafiles","name":"unzlib.py","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"version_only.proto2.pkl","CopyToMask":-1,"filePath":"datafiles","name":"version_only.proto2.pkl","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
