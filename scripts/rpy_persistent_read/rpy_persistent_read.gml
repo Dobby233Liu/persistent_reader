@@ -172,15 +172,11 @@ function rpyp_pkl_read_bytearray(buf, startpoint, len, movecursor = true) {
         throw "Bytearray length negative"
 	else if buffer_get_size(buf) < (startpoint + len)
 		throw "Bytearray length out of bounds";
-    var old_cursor = buffer_tell(buf)
-	buffer_seek(buf, buffer_seek_start, startpoint + len)
     var arr = []
 	for (var i = len - 1; i >= 0; i--)
-        arr[i] = buffer_read(buf, buffer_u8);
+        arr[i] = buffer_peek(buf, startpoint + i, buffer_u8);
 	if movecursor
 		buffer_seek(buf, buffer_seek_start, startpoint + len)
-    else
-        buffer_seek(buf, buffer_seek_start, old_cursor)
 	return arr
 }
 
