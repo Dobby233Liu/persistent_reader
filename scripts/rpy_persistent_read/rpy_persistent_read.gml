@@ -842,6 +842,8 @@ function rpy_persistent_read_buffer(cmp_buff, find_class=rpyp_pkl_get_class) {
 	var pickle_buff = undefined
 	try {
 		pickle_buff = buffer_decompress(cmp_buff)
+        if !buffer_exists(pickle_buff)
+            throw "Failed to decompress buffer"
 		return rpy_persistent_read_raw_buffer(pickle_buff, find_class)
 	} finally {
 		if buffer_exists(pickle_buff)

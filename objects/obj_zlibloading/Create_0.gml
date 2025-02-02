@@ -1,6 +1,6 @@
 dump = ""
 
-var pdata = rpy_persistent_read("persistent_rsj")
+var pdata = rpy_persistent_read_uncompressed("pickle_p0")
 pdata = rpy_persistent_convert_from_abstract(pdata)
 
 dump = json_stringify(pdata, true)
