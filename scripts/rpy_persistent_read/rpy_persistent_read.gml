@@ -353,8 +353,8 @@ function _rpyp_pkl_renpy_python_RevertableSet() : _rpyp_pkl__builtin_set() const
 	__brackets_l__ = "renpy.python.RevertableSet(("
 };
 
-function rpyp_pkl_get_class(class, name) {
-    static class_lut = {
+function rpyp_pkl_get_global(namespace, name) {
+    static global_lut = {
     	"__builtin__.object" : _rpyp_pkl__builtin_object,
     	"__builtin__.tuple" : _rpyp_pkl__builtin_tuple,
     	"__builtin__.dict" : _rpyp_pkl__builtin_dict,
@@ -368,11 +368,11 @@ function rpyp_pkl_get_class(class, name) {
     	"renpy.preferences.Preferences" : _rpyp_pkl_renpy_preferences_Preferences
     }
 
-    var class_namex = class + "." + name;
-    var class_ctor = class_lut[$ class_namex]
-    if (class_ctor == undefined)
-    	throw "Unknown class " + class_namex;
-    return class_ctor;
+    var global_namex = namespace + "." + name;
+    var global_value = global_lut[$ global_namex]
+    if (global_value == undefined)
+    	throw "Unknown global " + global_namex;
+    return global_value;
 }
 
 function rpyp_pkl_fakeclass_isinstance(inst, module, name) {
@@ -385,7 +385,7 @@ function rpyp_pkl_callfunc(callable, args) {
     if is_callable(callable) {
         if is_struct(args) {
             if args.__content__ == undefined
-                    throw "Class is not an array-like fake Python class"
+                throw "Class is not an array-like fake Python class"
             args = args.__content__
         }
         if !is_array(args) {
@@ -399,16 +399,17 @@ function rpyp_pkl_callfunc(callable, args) {
     }
 }
 
-function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
+function _rpyp_pkl_interpreter(_buf, _find_global) constructor {
     buf = _buf
-    find_class = _find_class
-    _cached_builtin_classes = {
-    	"object" : find_class("__builtin__", "object"),
-    	"tuple" : find_class("__builtin__", "tuple"),
-    	"dict" : find_class("__builtin__", "dict"),
-    	"set" : find_class("__builtin__", "set"),
-    	"frozenset" : find_class("__builtin__", "frozenset"),
-    	"list" : find_class("__builtin__", "list"),
+    _buf_len = buffer_get_size(buf)
+    find_global = _find_global
+    _cached_builtin_globals = {
+    	"object" : find_global("__builtin__", "object"),
+    	"tuple" : find_global("__builtin__", "tuple"),
+    	"dict" : find_global("__builtin__", "dict"),
+    	"set" : find_global("__builtin__", "set"),
+    	"frozenset" : find_global("__builtin__", "frozenset"),
+    	"list" : find_global("__builtin__", "list"),
     }
     version = -1
 	memo = []
@@ -427,13 +428,13 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 	inst_lut[global._pickle_opcodes.GLOBAL] = function GLOBAL () {
 		var origin = rpyp_pkl_read_line(buf)
 		var class = rpyp_pkl_read_line(buf)
-		class = find_class(origin, class)
+		class = find_global(origin, class)
 		array_push(stack, class)
 	};
 	inst_lut[global._pickle_opcodes.STACK_GLOBAL] = function STACK_GLOBAL () {
 		var class = array_pop(stack)
 		var origin = array_pop(stack)
-		array_push(stack, find_class(origin, class))
+		array_push(stack, find_global(origin, class))
 	};
 	inst_lut[global._pickle_opcodes.BINPUT] = function BINPUT () {
 		var loc = buffer_read(buf, buffer_u8)
@@ -442,7 +443,7 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 		memo[loc] = array_last(stack)
 	};
 	inst_lut[global._pickle_opcodes.EMPTY_TUPLE] = function EMPTY_TUPLE () {
-		array_push(stack, new (_cached_builtin_classes.tuple)().__new__([]))
+		array_push(stack, new (_cached_builtin_globals.tuple)().__new__([]))
 	};
 	inst_lut[global._pickle_opcodes.NEWOBJ] = function NEWOBJ () {
 		var args = array_pop(stack).__content__
@@ -450,10 +451,10 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 		array_push(stack, new cls().__new__(args))
 	};
 	inst_lut[global._pickle_opcodes.EMPTY_DICT] = function EMPTY_DICT () {
-		array_push(stack, new (_cached_builtin_classes.dict)().__new__([]))
+		array_push(stack, new (_cached_builtin_globals.dict)().__new__([]))
 	};
 	inst_lut[global._pickle_opcodes.EMPTY_SET] = function EMPTY_SET () {
-		array_push(stack, new (_cached_builtin_classes.set)().__new__([]))
+		array_push(stack, new (_cached_builtin_globals.set)().__new__([]))
 	};
 	inst_lut[global._pickle_opcodes.MARK] = function MARK () {
 		array_push(metastack, stack)
@@ -473,7 +474,7 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 		array_push(stack, buffer_read(buf, buffer_u8))
 	};
 	inst_lut[global._pickle_opcodes.EMPTY_LIST] = function EMPTY_LIST () {
-		array_push(stack, new (_cached_builtin_classes.list)().__new__([]))
+		array_push(stack, new (_cached_builtin_globals.list)().__new__([]))
 	};
 	inst_lut[global._pickle_opcodes.BINUNICODE] = function BINUNICODE () {
 		var len = buffer_read(buf, buffer_u32);
@@ -503,7 +504,7 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 	};
 	inst_lut[global._pickle_opcodes.TUPLE1] = function TUPLE1 () {
         var contents = array_pop(stack)
-		var obj = new (_cached_builtin_classes.tuple)().__new__([contents]);
+		var obj = new (_cached_builtin_globals.tuple)().__new__([contents]);
 		array_push(stack, obj)
 	};
 	inst_lut[global._pickle_opcodes.REDUCE] = function REDUCE () {
@@ -528,7 +529,7 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 		var tcontents = []
 		tcontents[1] = array_pop(stack)
 		tcontents[0] = array_pop(stack)
-		var obj = new (_cached_builtin_classes.tuple)().__new__(tcontents);
+		var obj = new (_cached_builtin_globals.tuple)().__new__(tcontents);
 		array_push(stack, obj)
 	};
 	inst_lut[global._pickle_opcodes.TUPLE3] = function TUPLE3 () {
@@ -536,7 +537,7 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 		tcontents[2] = array_pop(stack)
 		tcontents[1] = array_pop(stack)
 		tcontents[0] = array_pop(stack)
-		var obj = new (_cached_builtin_classes.tuple)().__new__(tcontents);
+		var obj = new (_cached_builtin_globals.tuple)().__new__(tcontents);
 		array_push(stack, obj)
 	};
 	inst_lut[global._pickle_opcodes.LONG_BINGET] = function LONG_BINGET () {
@@ -608,7 +609,7 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
         }
         var cls = extensions[code]
         if !is_undefined(cls)
-            array_push(stack, method(self, find_class(cls[0], cls[1])));
+            array_push(stack, method(self, find_global(cls[0], cls[1])));
         else
             throw "Unregistered extension " + code
     }
@@ -693,7 +694,7 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 	inst_lut[global._pickle_opcodes.DICT] = function DICT () {
 		var items = stack
 		stack = _RPYP_PKL_POP_MARK
-		var dict = new (_cached_builtin_classes.dict)().__new__([])
+		var dict = new (_cached_builtin_globals.dict)().__new__([])
 		for (var i = 0; i < array_length(items); i += 2)
 			dict.__content__[$ items[i]] = items[i + 1]
 		array_push(stack, dict)
@@ -705,7 +706,7 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 	inst_lut[global._pickle_opcodes.INST] = function INST () {
 		var origin = rpyp_pkl_read_line(buf)
 		var class = rpyp_pkl_read_line(buf)
-		var class_obj = find_class(origin, class)
+		var class_obj = find_global(origin, class)
 		var orig_stack = stack
 		stack = _RPYP_PKL_POP_MARK
 		array_push(stack, new class_obj().__new__(orig_stack))
@@ -720,7 +721,7 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 	inst_lut[global._pickle_opcodes.LIST] = function LIST () {
 		var items = stack
 		stack = _RPYP_PKL_POP_MARK
-		var list = new (_cached_builtin_classes.list)().__new__(items)
+		var list = new (_cached_builtin_globals.list)().__new__(items)
 		array_push(stack, list)
 	};
 	inst_lut[global._pickle_opcodes.PUT] = function PUT () {
@@ -736,7 +737,7 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 	inst_lut[global._pickle_opcodes.TUPLE] = function TUPLE () {
 		var items = stack
 		stack = _RPYP_PKL_POP_MARK
-		var list = new (_cached_builtin_classes.tuple)().__new__(items)
+		var list = new (_cached_builtin_globals.tuple)().__new__(items)
 		array_push(stack, list)
 	};
 	// there isn't really any kind of bytes support, but it should be ok
@@ -764,7 +765,7 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 	inst_lut[global._pickle_opcodes.FROZENSET] = function FROZENSET () {
 		var items = stack
 		stack = _RPYP_PKL_POP_MARK
-		var set = new (_cached_builtin_classes.frozenset)().__new__([])
+		var set = new (_cached_builtin_globals.frozenset)().__new__([])
 		set.__content__ = items
 		array_push(stack, set)
 	};
@@ -800,23 +801,22 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
         if is_undefined(inst_f)
 			throw "Unknown opcode " + chr(inst);
         inst_f()
+        if buffer_tell(buf) == _buf_len
+            throw "EOF reached while reading buffer, however STOP is not called"
     }
 }
 
 ///@return {Any}?
-function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
-	var correctly_stopped = false;
-    var interp = new _rpyp_pkl_interpreter(buf, find_class)
+function rpy_persistent_read_raw_buffer(buf, find_global=rpyp_pkl_get_global) {
 	if buffer_get_size(buf) <= 0
 		throw "Buffer is empty";
+	var correctly_stopped = false;
+    var interp = new _rpyp_pkl_interpreter(buf, find_global)
 	try {
-		while (true) {
+		while (true)
 			interp.step()
-		}
 	} catch (_e) {
-		if _e == _RPYP_PKL_STOP_CODE {
-			correctly_stopped = true
-		} else {
+		if _e != _RPYP_PKL_STOP_CODE {
             var poshint = "\nBuffer read to position " + string(buffer_tell(buf))
             if is_string(_e) {
     			_e += poshint
@@ -829,48 +829,43 @@ function rpy_persistent_read_raw_buffer(buf, find_class=rpyp_pkl_get_class) {
     		}
         }
 	}
-    // Well I think the loop will just crash when we reach EOF anyway
-    // I'm not calling buffer_tell every iteration
-	if !correctly_stopped {
-		throw "EOF reached while reading buffer, however STOP is not called"
-	}
 	return interp.value;
 }
 
 ///@return {Any}?
-function rpy_persistent_read_buffer(cmp_buff, find_class=rpyp_pkl_get_class) {
+function rpy_persistent_read_buffer(cmp_buff, find_global=rpyp_pkl_get_global) {
 	var pickle_buff = undefined
 	try {
 		pickle_buff = buffer_decompress(cmp_buff)
         if !buffer_exists(pickle_buff)
             throw "Failed to decompress buffer"
-		return rpy_persistent_read_raw_buffer(pickle_buff, find_class)
+		return rpy_persistent_read_raw_buffer(pickle_buff, find_global)
 	} finally {
 		if buffer_exists(pickle_buff)
 			buffer_delete(pickle_buff)
 	}
 }
 ///@return {Any}?
-function rpy_persistent_read(fn, find_class=rpyp_pkl_get_class){
+function rpy_persistent_read(fn, find_global=rpyp_pkl_get_global){
 	var orig_file = undefined;
 	try {
 		orig_file = buffer_load(fn);
 		if !buffer_exists(orig_file)
 			throw "Can't load file " + fn;
-		return rpy_persistent_read_buffer(orig_file, find_class)
+		return rpy_persistent_read_buffer(orig_file, find_global)
 	} finally {
 		if buffer_exists(orig_file)
 			buffer_delete(orig_file)
 	}
 }
 ///@return {Any}?
-function rpy_persistent_read_uncompressed(fn, find_class=rpyp_pkl_get_class){
+function rpy_persistent_read_uncompressed(fn, find_global=rpyp_pkl_get_global){
 	var orig_file = undefined;
 	try {
 		orig_file = buffer_load(fn);
 		if !buffer_exists(orig_file)
 			throw "Can't load file " + fn;
-		return rpy_persistent_read_raw_buffer(orig_file, find_class)
+		return rpy_persistent_read_raw_buffer(orig_file, find_global)
 	} finally {
 		if buffer_exists(orig_file)
 			buffer_delete(orig_file)
