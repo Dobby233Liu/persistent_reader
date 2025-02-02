@@ -251,13 +251,16 @@ function _rpyp_pkl__builtin_tuple() : _rpyp_pkl__builtin_object() constructor {
 		return __brackets_l__ + string_copy(inner, 2, string_length(inner) - 2) + __brackets_r__;
 	}
 };
-// bruh
 function _rpyp_pkl__builtin_set() : _rpyp_pkl__builtin_tuple() constructor {
 	static __module__ = "__builtin__"
 	static __name__ = "set"
 	static __bases__ = [_rpyp_pkl__builtin_object]
 	__brackets_l__ = "set(("
 	__brackets_r__ = "))"
+	__init__ = function(_, args) {
+        if array_length(args) > 0
+            __content__ = variable_clone(args[0], 1)
+	}
 	static add = function(value) {
 		array_push(__content__, value)
 	}
@@ -343,19 +346,11 @@ function _rpyp_pkl_renpy_python_RevertableList() : _rpyp_pkl__builtin_list() con
 	static __name__ = "RevertableList"
 	static __bases__ = [_rpyp_pkl__builtin_list, _rpyp_pkl__builtin_object]
 };
-// this needs to be done for some reason
-function _rpyp_pkl_renpy_python_RevertableSet() : _rpyp_pkl__builtin_tuple() constructor {
+function _rpyp_pkl_renpy_python_RevertableSet() : _rpyp_pkl__builtin_set() constructor {
 	static __module__ = "renpy.python"
 	static __name__ = "RevertableSet"
 	static __bases__ = [_rpyp_pkl__builtin_set, _rpyp_pkl__builtin_object]
-	__brackets_l__ = "set(("
-	__brackets_r__ = "))"
-	static add = function(value) {
-		array_push(__content__, value)
-	}
-	__setstate__ = function (state) {
-        __content__ = array_concat(__content__, state)
-	}
+	__brackets_l__ = "renpy.python.RevertableSet(("
 };
 
 function rpyp_pkl_get_class(class, name) {
@@ -396,7 +391,7 @@ function rpyp_pkl_callfunc(callable, args) {
         if !is_array(args) {
             throw "args argument is not an array"
         }
-        if script_exists(callable) // FIXME (reduce)
+        if !is_method(callable)
             return new callable().__new__(args);
         return script_execute_ext(callable, args);
     } else {
@@ -512,9 +507,10 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 		array_push(stack, obj)
 	};
 	inst_lut[global._pickle_opcodes.REDUCE] = function REDUCE () {
-		var args = array_pop(stack).__content__[0]; // FIXME (reduce)
+		var args = array_pop(stack).__content__;
 		var callable = array_pop(stack);
-		array_push(stack, rpyp_pkl_callfunc(callable, args))
+        var result = rpyp_pkl_callfunc(callable, args);
+		array_push(stack, result)
 	};
 	inst_lut[global._pickle_opcodes.NEWTRUE] = function NEWTRUE () {
 		array_push(stack, true)
@@ -692,7 +688,7 @@ function _rpyp_pkl_interpreter(_buf, _find_class) constructor {
 	};
 	inst_lut[global._pickle_opcodes.APPEND] = function APPEND () {
 		var value = array_pop(stack)
-		array_push(array_last(stack), value)
+		array_push(array_last(stack).__content__, value)
 	};
 	inst_lut[global._pickle_opcodes.DICT] = function DICT () {
 		var items = stack
